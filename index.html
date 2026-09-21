@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Divja baba — kamera (test)</title>
+<style>
+  :root{--bg:#0c0813;--panel:#171021;--line:#3a2a52;--ink:#efe6d6;--soft:#a99bbd;--accent:#e0a860;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none;user-select:none;-webkit-user-select:none;}
+  .app{min-height:100%;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;flex-direction:column;gap:12px;}
+  h1{margin:0;font-family:Georgia,serif;font-size:1rem;letter-spacing:0.14em;font-weight:600;color:#e2d0a8;}
+  .sub{font-size:0.7rem;letter-spacing:0.1em;color:var(--soft);margin-top:2px;}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  #preview{width:84px;height:112px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#000;transform:scaleX(-1);}
+  #preview.rear{transform:none;}
+  .big{text-align:center;}
+  .big .n{font-family:Georgia,serif;font-size:5.2rem;font-weight:700;line-height:1;color:var(--accent);}
+  .big .n small{font-size:1.6rem;color:var(--soft);}
+  .big .l{font-size:0.7rem;letter-spacing:0.16em;color:var(--soft);margin-top:4px;}
+  .bar{height:16px;border-radius:9px;background:#241a33;border:1px solid var(--line);overflow:hidden;}
+  .bar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#e0a860,#b56cff);}
+  canvas#graph{width:100%;height:170px;border-radius:12px;background:#120b1b;border:1px solid var(--line);display:block;}
+  .row{display:flex;gap:8px;}
+  .row > *{flex:1;}
+  button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;padding:12px 6px;font-size:0.72rem;letter-spacing:0.08em;font-family:inherit;}
+  button.on{background:var(--accent);color:#22140a;border-color:var(--accent);font-weight:700;}
+  button.main{background:var(--accent);color:#22140a;border:none;font-size:1rem;font-weight:700;padding:14px 26px;border-radius:999px;}
+  .kv{display:flex;justify-content:space-between;font-size:0.78rem;color:var(--soft);}
+  .kv b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  #diag{font-size:0.66rem;line-height:1.5;color:var(--soft);white-space:pre-wrap;word-break:break-word;}
+  #msg{font-size:0.78rem;color:#ffb3c0;min-height:1.2em;}
+  #startCard{position:fixed;inset:0;z-index:10;background:rgba(12,8,19,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px;text-align:center;}
+  #startCard p{margin:0;font-size:0.86rem;line-height:1.55;color:var(--soft);max-width:34ch;}
+  #startCard h2{margin:0;font-family:Georgia,serif;letter-spacing:0.12em;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div><h1>DIVJA BABA</h1><div class="sub">KAMERA · TEST ZAKLANJANJA</div></div>
+    <video id="preview" playsinline muted></video>
+  </div>
+
+  <div class="big"><div class="n"><span id="pct">0</span><small>%</small></div><div class="l">ZATVORENO (ZAKLONJENO RUKOM)</div></div>
+  <div class="bar"><i id="barFill"></i></div>
+  <canvas id="graph" width="700" height="340"></canvas>
+  <div class="kv"><span>svetlo sa kamere (0–255)</span><b id="lum">0</b></div>
+  <div class="kv"><span>opseg</span><b id="range">automatski</b></div>
+
+  <div class="row"><button id="camBtn" type="button">KAMERA: PREDNJA</button><button id="sndBtn" type="button">ZVUK: ISKLJUČEN</button></div>
+  <div class="row"><button id="calOpen" type="button">KALIBRIŠI: OTVORENO</button><button id="calShut" type="button">KALIBRIŠI: ZAKLONJENO</button></div>
+  <div class="row"><button id="autoBtn" type="button">AUTOMATSKI OPSEG</button><button id="expBtn" type="button">ZAKLJUČAJ EKSPOZICIJU</button></div>
+  <div id="msg"></div>
+  <div id="diag"></div>
+</div>
+
+<div id="startCard">
+  <h2>KAMERA · TEST</h2>
+  <p>Kamera meri koliko svetla dolazi. Kad je rukom zakloniš, broj raste. Ništa se ne snima niti šalje, sve ostaje u telefonu.</p>
+  <p>Zakloni kameru dlanom: potpuno, pa delimično, pa otkloni. Gledaj kako se menja broj i grafik.</p>
+  <button class="main" id="startBtn" type="button">Start</button>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const video = $('preview'), graph = $('graph'), gctx = graph.getContext('2d');
+  const sm = document.createElement('canvas'); sm.width = 24; sm.height = 18;
+  const sctx = sm.getContext('2d', {willReadFrequently: true});
+
+  let stream = null, track = null, facing = 'user';
+  let lum = 0, lumRaw = 0, started = false;
+  let openRef = null, shutRef = null;          // manual calibration (null = automatic)
+  const hist = [];                              // {t, lum, closed}
+  const WINDOW_MS = 8000, GRAPH_MS = 10000;
+  let closed = 0;
+
+  function msg(t){ $('msg').textContent = t || ''; }
+
+  async function openCamera(){
+    if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {facingMode: {ideal: facing}, width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 30}}
+    });
+    track = stream.getVideoTracks()[0];
+    video.srcObject = stream;
+    video.classList.toggle('rear', facing === 'environment');
+    await video.play();
+    hist.length = 0; openRef = shutRef = null; $('range').textContent = 'automatski';
+    showDiag();
+  }
+
+  function showDiag(){
+    let s = '';
+    try{
+      const st = track.getSettings ? track.getSettings() : {};
+      const cp = track.getCapabilities ? track.getCapabilities() : {};
+      s += 'kamera: ' + (track.label || '?') + '\n';
+      s += 'rezolucija: ' + (st.width || '?') + 'x' + (st.height || '?') + ' @ ' + (st.frameRate ? Math.round(st.frameRate) : '?') + ' fps\n';
+      const keys = ['exposureMode','exposureTime','exposureCompensation','iso','brightness'];
+      keys.forEach(k => {
+        const has = (k in cp);
+        s += k + ': ' + (has ? 'podržano' : 'nije dostupno') + (st[k] !== undefined ? ' (sada: ' + st[k] + ')' : '') + '\n';
+      });
+    }catch(e){ s = 'dijagnostika nije dostupna'; }
+    $('diag').textContent = s;
+  }
+
+  function sample(){
+    if(video.readyState < 2) return null;
+    sctx.drawImage(video, 0, 0, sm.width, sm.height);
+    const d = sctx.getImageData(0, 0, sm.width, sm.height).data;
+    let sum = 0;
+    for(let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i+1] + 0.0722 * d[i+2];
+    return sum / (d.length / 4);
+  }
+
+  function computeClosed(now){
+    // fixed range after calibration, otherwise the range of the last few seconds
+    let hi, lo;
+    if(openRef !== null && shutRef !== null){ hi = openRef; lo = shutRef; }
+    else {
+      hi = -1; lo = 999;
+      for(let i = hist.length - 1; i >= 0 && now - hist[i].t <= WINDOW_MS; i--){ hist[i].lum > hi && (hi = hist[i].lum); hist[i].lum < lo && (lo = hist[i].lum); }
+      if(openRef !== null){ hi = openRef; }
+    }
+    if(hi - lo < 6) return 0;                       // nothing changes: treat as open
+    return Math.max(0, Math.min(1, (hi - lum) / (hi - lo)));
+  }
+
+  // ---- sound: pitch falls and tone darkens as the "bell" is closed ----
+  let actx = null, osc, gain, lp, soundOn = false;
+  function soundStart(){
+    if(!actx){
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      osc = actx.createOscillator(); gain = actx.createGain(); lp = actx.createBiquadFilter();
+      const imag = new Float32Array([0, 1, 0.3, 0.1, 0.05]); osc.setPeriodicWave(actx.createPeriodicWave(new Float32Array(5), imag));
+      lp.type = 'lowpass'; lp.frequency.value = 4000; gain.gain.value = 0;
+      osc.connect(lp); lp.connect(gain); gain.connect(actx.destination); osc.start();
+    }
+    if(actx.state === 'suspended') actx.resume();
+  }
+  function soundUpdate(){
+    if(!actx) return;
+    const t = actx.currentTime;
+    osc.frequency.setTargetAtTime(523.25 * Math.pow(2, -closed * 7 / 12), t, 0.03);   // up to 7 semitones lower
+    lp.frequency.setTargetAtTime(4200 - closed * 3200, t, 0.05);
+    gain.gain.setTargetAtTime(soundOn ? 0.25 : 0, t, 0.05);
+  }
+
+  // ---- drawing ----
+  function drawGraph(now){
+    const W = graph.width, H = graph.height;
+    gctx.clearRect(0, 0, W, H);
+    gctx.strokeStyle = '#2a2038'; gctx.lineWidth = 1;
+    for(let i = 1; i < 4; i++){ gctx.beginPath(); gctx.moveTo(0, H * i / 4); gctx.lineTo(W, H * i / 4); gctx.stroke(); }
+    const pts = hist.filter(h => now - h.t <= GRAPH_MS);
+    if(pts.length < 2) return;
+    // light (grey)
+    gctx.strokeStyle = '#8a7ea0'; gctx.lineWidth = 2; gctx.beginPath();
+    pts.forEach((h, i) => { const x = W - (now - h.t) / GRAPH_MS * W, y = H - (h.lum / 255) * H * 0.96 - 4; i ? gctx.lineTo(x, y) : gctx.moveTo(x, y); });
+    gctx.stroke();
+    // closed % (gold)
+    gctx.strokeStyle = '#e0a860'; gctx.lineWidth = 4; gctx.beginPath();
+    pts.forEach((h, i) => { const x = W - (now - h.t) / GRAPH_MS * W, y = H - h.closed * H * 0.92 - 8; i ? gctx.lineTo(x, y) : gctx.moveTo(x, y); });
+    gctx.stroke();
+    gctx.fillStyle = '#a99bbd'; gctx.font = '22px sans-serif';
+    gctx.fillText('zlatna linija = zatvoreno   siva = svetlo', 12, 26);
+  }
+
+  function frame(){
+    requestAnimationFrame(frame);
+    const v = sample();
+    if(v === null) return;
+    const now = performance.now();
+    lumRaw = v; lum += (v - lum) * 0.4;
+    closed = computeClosed(now);
+    hist.push({t: now, lum: lum, closed: closed});
+    while(hist.length && now - hist[0].t > GRAPH_MS + 500) hist.shift();
+    $('pct').textContent = Math.round(closed * 100);
+    $('barFill').style.width = (closed * 100) + '%';
+    $('lum').textContent = Math.round(lum);
+    drawGraph(now);
+    soundUpdate();
+  }
+
+  // ---- buttons ----
+  function avgLast(ms){
+    const now = performance.now(); let s = 0, n = 0;
+    for(let i = hist.length - 1; i >= 0 && now - hist[i].t <= ms; i--){ s += hist[i].lum; n++; }
+    return n ? s / n : lum;
+  }
+  function calLabel(){ $('range').textContent = (openRef !== null ? 'otvoreno ' + Math.round(openRef) : 'otvoreno: auto') + ' · ' + (shutRef !== null ? 'zaklonjeno ' + Math.round(shutRef) : 'zaklonjeno: auto'); }
+  $('calOpen').addEventListener('click', () => { msg('Drži kameru otkrivenu 1 sekundu...'); setTimeout(() => { openRef = avgLast(900); calLabel(); msg('Otvoreno zapamćeno.'); }, 1000); });
+  $('calShut').addEventListener('click', () => { msg('Zakloni kameru potpuno 1 sekundu...'); setTimeout(() => { shutRef = avgLast(900); calLabel(); msg('Zaklonjeno zapamćeno.'); }, 1000); });
+  $('autoBtn').addEventListener('click', () => { openRef = shutRef = null; $('range').textContent = 'automatski'; msg('Opseg se sada sam prilagođava.'); });
+  $('camBtn').addEventListener('click', async () => {
+    facing = facing === 'user' ? 'environment' : 'user';
+    $('camBtn').textContent = 'KAMERA: ' + (facing === 'user' ? 'PREDNJA' : 'ZADNJA');
+    try{ await openCamera(); msg(''); }catch(e){ msg('Ne mogu da uključim tu kameru (' + (e && e.name) + ').'); }
+  });
+  $('sndBtn').addEventListener('click', () => {
+    soundOn = !soundOn; if(soundOn) soundStart();
+    $('sndBtn').textContent = 'ZVUK: ' + (soundOn ? 'UKLJUČEN' : 'ISKLJUČEN'); $('sndBtn').classList.toggle('on', soundOn);
+  });
+  $('expBtn').addEventListener('click', async () => {
+    if(!track){ return; }
+    try{
+      await track.applyConstraints({advanced: [{exposureMode: 'manual'}]});
+      msg('Ekspozicija zaključana (ako telefon dozvoljava). Proveri opet zaklanjanje.');
+    }catch(e){
+      msg('Telefon ne dozvoljava zaključavanje ekspozicije iz pregledača. Koristi kalibraciju.');
+    }
+    showDiag();
+  });
+
+  async function start(){
+    try{
+      await openCamera();
+      $('startCard').style.display = 'none';
+      started = true;
+      try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(_){}
+      requestAnimationFrame(frame);
+    }catch(e){
+      const n = e && e.name;
+      $('startCard').querySelector('p').textContent = (n === 'NotAllowedError' || n === 'PermissionDeniedError')
+        ? 'Kamera nije dozvoljena. Dodirni ikonicu pored adrese, dozvoli kameru i osveži stranicu.'
+        : 'Kamera nije pokrenuta (' + (n || 'greška') + '). Ako si u Claude prikazu, otvori stranicu u Chrome-u.';
+    }
+  }
+  $('startBtn').addEventListener('click', start);
+})();
+</script>
+</body>
+</html>
