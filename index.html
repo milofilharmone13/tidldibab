@@ -3,234 +3,612 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Divja baba — kamera (test)</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#07050a">
+<title>Tidldibab</title>
 <style>
-  :root{--bg:#0c0813;--panel:#171021;--line:#3a2a52;--ink:#efe6d6;--soft:#a99bbd;--accent:#e0a860;}
+  :root{--ink:#efe6d6;--soft:#b3a48d;--accent:#e0a860;--line:#4a3826;--panel:rgba(20,13,9,0.78);}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none;user-select:none;-webkit-user-select:none;}
-  .app{min-height:100%;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;flex-direction:column;gap:12px;}
-  h1{margin:0;font-family:Georgia,serif;font-size:1rem;letter-spacing:0.14em;font-weight:600;color:#e2d0a8;}
-  .sub{font-size:0.7rem;letter-spacing:0.1em;color:var(--soft);margin-top:2px;}
-  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-  #preview{width:84px;height:112px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#000;transform:scaleX(-1);}
-  #preview.rear{transform:none;}
-  .big{text-align:center;}
-  .big .n{font-family:Georgia,serif;font-size:5.2rem;font-weight:700;line-height:1;color:var(--accent);}
-  .big .n small{font-size:1.6rem;color:var(--soft);}
-  .big .l{font-size:0.7rem;letter-spacing:0.16em;color:var(--soft);margin-top:4px;}
-  .bar{height:16px;border-radius:9px;background:#241a33;border:1px solid var(--line);overflow:hidden;}
-  .bar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#e0a860,#b56cff);}
-  canvas#graph{width:100%;height:170px;border-radius:12px;background:#120b1b;border:1px solid var(--line);display:block;}
-  .row{display:flex;gap:8px;}
-  .row > *{flex:1;}
-  button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;padding:12px 6px;font-size:0.72rem;letter-spacing:0.08em;font-family:inherit;}
-  button.on{background:var(--accent);color:#22140a;border-color:var(--accent);font-weight:700;}
-  button.main{background:var(--accent);color:#22140a;border:none;font-size:1rem;font-weight:700;padding:14px 26px;border-radius:999px;}
-  .kv{display:flex;justify-content:space-between;font-size:0.78rem;color:var(--soft);}
-  .kv b{color:var(--ink);font-variant-numeric:tabular-nums;}
-  #diag{font-size:0.66rem;line-height:1.5;color:var(--soft);white-space:pre-wrap;word-break:break-word;}
-  #msg{font-size:0.78rem;color:#ffb3c0;min-height:1.2em;}
-  #startCard{position:fixed;inset:0;z-index:10;background:rgba(12,8,19,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px;text-align:center;}
-  #startCard p{margin:0;font-size:0.86rem;line-height:1.55;color:var(--soft);max-width:34ch;}
-  #startCard h2{margin:0;font-family:Georgia,serif;letter-spacing:0.12em;font-weight:600;}
+  html,body{margin:0;height:100%;background:#07050a;color:var(--ink);overflow:hidden;overscroll-behavior:none;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  body{background:radial-gradient(ellipse 90% 55% at 50% 100%,#4a2712 0%,#241309 38%,#0b0709 72%,#050307 100%);}
+  #stage{position:fixed;inset:0;touch-action:none;}
+  #stage svg{width:100%;height:100%;display:block;touch-action:none;}
+  .bar{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+    padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 6px;pointer-events:none;}
+  .bar > *{pointer-events:auto;}
+  .grp{display:flex;gap:8px;align-items:center;}
+  .chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;min-width:38px;height:36px;padding:0 12px;
+    font-size:0.68rem;letter-spacing:0.1em;font-family:inherit;display:flex;align-items:center;justify-content:center;}
+  .chip.on{background:var(--accent);color:#22140a;border-color:var(--accent);font-weight:700;}
+  #verLbl{font-size:0.62rem;letter-spacing:0.14em;color:var(--soft);text-align:center;text-shadow:0 1px 3px #000;pointer-events:none;}
+  .lbl{font-size:3.4px;fill:#f3e6c8;opacity:0.7;font-family:Georgia,serif;pointer-events:none;}
+  .lbl.dim{opacity:0.45;}
+  .glow{opacity:0;transition:opacity 0.06s;}
+  .glow.on{opacity:1;}
+  .overlay{position:fixed;inset:0;z-index:20;background:rgba(7,5,10,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:26px;text-align:center;}
+  .overlay p{margin:0;font-size:0.84rem;line-height:1.5;color:var(--soft);max-width:32ch;}
+  #startTitle svg{width:min(80vw,320px);height:auto;display:block;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.7));}
+  .btn{border:none;border-radius:999px;padding:13px 28px;font-size:1rem;font-weight:700;color:#22140a;background:var(--accent);box-shadow:0 3px 0 #8a5a24;font-family:inherit;}
+  .btn.ghost{background:transparent;color:var(--soft);box-shadow:none;border:1px solid var(--line);font-size:0.8rem;padding:9px 18px;font-weight:500;}
+  .info{position:fixed;inset:0;z-index:30;background:rgba(7,5,10,0.97);overflow-y:auto;display:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 40px;touch-action:pan-y;}
+  .info.show{display:block;}
+  .info h3{margin:18px 0 6px;font-family:Georgia,serif;font-size:1rem;letter-spacing:0.06em;color:var(--accent);font-weight:600;}
+  .info p,.info li{font-size:0.86rem;line-height:1.5;margin:0 0 6px;}
+  .info ul{margin:0;padding-left:18px;}
+  .info b{color:#f3d9a8;}
+  .infoClose{position:sticky;top:0;float:right;border:none;border-radius:999px;background:var(--accent);color:#22140a;padding:9px 18px;font-size:0.9rem;font-weight:700;}
+  .panel{position:fixed;inset:0;z-index:25;background:rgba(7,5,10,0.97);overflow-y:auto;display:none;padding:calc(env(safe-area-inset-top,0px) + 60px) 18px 40px;touch-action:pan-y;}
+  .panel.show{display:block;}
+  .panelClose{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px;z-index:26;border:none;border-radius:999px;background:var(--accent);color:#22140a;padding:8px 16px;font-size:0.8rem;font-weight:700;}
+  .ctl{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+  .ctl label{display:flex;justify-content:space-between;font-size:0.72rem;letter-spacing:0.08em;color:var(--soft);}
+  .ctl label b{color:var(--ink);font-weight:600;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;margin:0;}
+  input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:#2a2038;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#f3d9a8;border:2px solid var(--accent);margin-top:-7px;}
+  .meter{position:relative;height:10px;border-radius:5px;background:#241a13;border:1px solid var(--line);overflow:hidden;}
+  .meter i{position:absolute;left:0;top:0;bottom:0;width:0%;background:var(--accent);}
+  .modeBtn{border:1px solid var(--line);background:transparent;color:var(--soft);border-radius:10px;padding:11px 4px;font-size:0.68rem;letter-spacing:0.05em;font-family:inherit;}
+  .modeBtn.on{background:var(--accent);color:#22140a;border-color:var(--accent);font-weight:700;}
+  .two{display:flex;gap:8px;margin-bottom:10px;}
+  .two > *{flex:1;}
+  #panelMsg{font-size:0.72rem;color:#ffb3c0;min-height:1.2em;margin-top:4px;}
+  .panel h3{margin:16px 0 6px;font-family:Georgia,serif;font-size:0.92rem;letter-spacing:0.06em;color:var(--accent);font-weight:600;}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="top">
-    <div><h1>DIVJA BABA</h1><div class="sub">KAMERA · TEST ZAKLANJANJA</div></div>
-    <video id="preview" playsinline muted></video>
-  </div>
+<div id="stage"><svg id="svg" viewBox="0 0 100 200" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="boneGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#6b5033"/><stop offset="0.16" stop-color="#b79c70"/>
+      <stop offset="0.42" stop-color="#e6d3aa"/><stop offset="0.62" stop-color="#cdb686"/>
+      <stop offset="0.86" stop-color="#8f7550"/><stop offset="1" stop-color="#4f3a22"/>
+    </linearGradient>
+    <linearGradient id="endStain" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#4a2e14" stop-opacity="0.55"/><stop offset="0.14" stop-color="#4a2e14" stop-opacity="0"/>
+      <stop offset="0.86" stop-color="#4a2e14" stop-opacity="0"/><stop offset="1" stop-color="#4a2e14" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="spec" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#fff6dc" stop-opacity="0"/><stop offset="0.5" stop-color="#fff6dc" stop-opacity="0.75"/><stop offset="1" stop-color="#fff6dc" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="holeGrad" cx="50%" cy="40%" r="65%">
+      <stop offset="0" stop-color="#040202"/><stop offset="0.7" stop-color="#140c07"/><stop offset="1" stop-color="#2c1b0e"/>
+    </radialGradient>
+    <radialGradient id="finger" cx="50%" cy="45%" r="55%">
+      <stop offset="0" stop-color="#ffd6b0" stop-opacity="0.96"/><stop offset="0.65" stop-color="#e8a06e" stop-opacity="0.88"/><stop offset="1" stop-color="#c2703f" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="mottle" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05 0.026" numOctaves="4" seed="11"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.42  0 0 0 0 0.27  0 0 0 0 0.13  1.6 0 0 0 -0.55"/>
+    </filter>
+    <filter id="pores" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9 0.55" numOctaves="2" seed="3"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.2  0 0 0 0 0.12  0 0 0 0 0.06  4 0 0 0 -2.45"/>
+    </filter>
+    <filter id="blur" x="-20%" y="-10%" width="140%" height="120%"><feGaussianBlur stdDeviation="2.2"/></filter>
+    <linearGradient id="replGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#6e5232"/><stop offset="0.1" stop-color="#9a7a4e"/><stop offset="0.28" stop-color="#b08d5e"/>
+      <stop offset="0.5" stop-color="#c4a274"/><stop offset="0.66" stop-color="#d4b487"/><stop offset="0.82" stop-color="#c0a06f"/><stop offset="0.94" stop-color="#94734a"/><stop offset="1" stop-color="#5c4326"/>
+    </linearGradient>
+    <radialGradient id="stainG" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#a5501c" stop-opacity="0.75"/><stop offset="0.6" stop-color="#b26a2c" stop-opacity="0.4"/><stop offset="1" stop-color="#b26a2c" stop-opacity="0"/></radialGradient>
+    <linearGradient id="origGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#6b4527"/><stop offset="0.09" stop-color="#a86d3b"/><stop offset="0.22" stop-color="#d09760"/>
+      <stop offset="0.5" stop-color="#e2b076"/><stop offset="0.8" stop-color="#deA86f"/><stop offset="0.94" stop-color="#c58f5c"/><stop offset="1" stop-color="#7a4f2d"/>
+    </linearGradient>
+    <radialGradient id="cavGrad" cx="55%" cy="45%" r="65%"><stop offset="0" stop-color="#080402"/><stop offset="0.7" stop-color="#1d1008"/><stop offset="1" stop-color="#4a2a15"/></radialGradient>
+    <filter id="oMottle" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.011 0.006" numOctaves="4" seed="21"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.33  0 0 0 0 0.15  1.5 0 0 0 -0.5"/>
+    </filter>
+    <filter id="oDark" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.55 0.42" numOctaves="2" seed="5"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.30  0 0 0 0 0.16  0 0 0 0 0.06  4.2 0 0 0 -2.55"/>
+    </filter>
+    <filter id="oLight" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.48 0.4" numOctaves="2" seed="17"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.98  0 0 0 0 0.80  0 0 0 0 0.58  -4.2 0 0 0 2.05"/>
+    </filter>
+    <filter id="blur6" x="-10%" y="-5%" width="120%" height="110%"><feGaussianBlur stdDeviation="7"/></filter>
+  </defs>
+  <g id="scene"></g>
+</svg></div>
 
-  <div class="big"><div class="n"><span id="pct">0</span><small>%</small></div><div class="l">ZATVORENO (ZAKLONJENO RUKOM)</div></div>
-  <div class="bar"><i id="barFill"></i></div>
-  <canvas id="graph" width="700" height="340"></canvas>
-  <div class="kv"><span>svetlo sa kamere (0–255)</span><b id="lum">0</b></div>
-  <div class="kv"><span>opseg</span><b id="range">automatski</b></div>
-
-  <div class="row"><button id="camBtn" type="button">KAMERA: PREDNJA</button><button id="sndBtn" type="button">ZVUK: ISKLJUČEN</button></div>
-  <div class="row"><button id="calOpen" type="button">KALIBRIŠI: OTVORENO</button><button id="calShut" type="button">KALIBRIŠI: ZAKLONJENO</button></div>
-  <div class="row"><button id="autoBtn" type="button">AUTOMATSKI OPSEG</button><button id="expBtn" type="button">ZAKLJUČAJ EKSPOZICIJU</button></div>
-  <div id="msg"></div>
-  <div id="diag"></div>
+<div class="bar">
+  <div class="grp"><button class="chip" id="b1" type="button">1</button><button class="chip" id="b2" type="button">2</button></div>
+  <div id="verLbl"></div>
+  <div class="grp"><button class="chip" id="infoBtn" type="button">INFO</button><button class="chip" id="fsBtn" type="button" aria-label="Ceo ekran">&#x26F6;</button><button class="chip" id="setBtn" type="button">&#x2699;</button></div>
 </div>
 
-<div id="startCard">
-  <h2>KAMERA · TEST</h2>
-  <p>Kamera meri koliko svetla dolazi. Kad je rukom zakloniš, broj raste. Ništa se ne snima niti šalje, sve ostaje u telefonu.</p>
-  <p>Zakloni kameru dlanom: potpuno, pa delimično, pa otkloni. Gledaj kako se menja broj i grafik.</p>
-  <button class="main" id="startBtn" type="button">Start</button>
+<div class="panel" id="panel">
+  <button class="panelClose" id="panelClose" type="button">Zatvori</button>
+  <h3>Dah (mikrofon)</h3>
+  <div class="ctl"><label><span>BREATH</span><b id="v_sens">50%</b></label><input type="range" id="sens" min="0" max="100" value="50"></div>
+  <div class="ctl"><label><span>VOLUME</span><b id="v_vol">70%</b></label><input type="range" id="vol" min="0" max="100" value="70"></div>
+  <div class="ctl"><label><span>DAH</span><b id="v_db">0%</b></label><div class="meter"><i id="meterFill"></i></div></div>
+  <div class="two"><button class="modeBtn" id="micBtn" type="button">MIKROFON: NE</button><button class="modeBtn" id="blowBtn" type="button">DUVAJ (drži)</button></div>
+
+  <h3>Zvono (kamera)</h3>
+  <div class="ctl"><label><span>ZATVORENOST</span><b id="v_cam">0%</b></label><div class="meter"><i id="camFill"></i></div></div>
+  <div class="two"><button class="modeBtn" id="camBtn" type="button">KAMERA: NE</button><button class="modeBtn" id="camFace" type="button">PREDNJA</button></div>
+  <div class="two"><button class="modeBtn" id="camCal" type="button">KALIBRIŠI</button><button class="modeBtn" id="camAuto" type="button">AUTO</button></div>
+  <div class="ctl"><label><span>OPSEG</span><b id="v_bend">7 pt</b></label><input type="range" id="bend" min="1" max="12" value="7"></div>
+  <div id="panelMsg"></div>
+</div>
+
+<div class="overlay" id="startCard">
+  <div id="startTitle" aria-label="Divja baba"></div>
+  <p>Frula iz kosti pećinskog medveda. Ceo ekran je kost, a usnik je dole, uz mikrofon.</p>
+  <button class="btn" id="startBtn" type="button">Start (ceo ekran)</button>
+  <button class="btn ghost" id="startNoFs" type="button">Bez celog ekrana</button>
+</div>
+
+<div class="info" id="info">
+  <button class="infoClose" id="infoClose" type="button">Zatvori</button>
+  <h3>Sve poznate verzije</h3>
+  <ul>
+    <li><b>Original (nađena kost):</b> leva butna kost mladunca pećinskog medveda, oko 11,4 cm, iz pećine Divje babe I kod Cerkna, staro oko 50.000–60.000 godina. Sačuvana su <b>dva cela otvora</b> (2 i 3) i zarezi na oba slomljena kraja (1 i 4), a na prednjoj strani još jedan zarez (5). Na gornjem kraju je V-prelom sa ostacima oštre ivice.</li>
+    <li><b>Turkova rekonstrukcija:</b> četiri otvora u liniji (1 do 4), jedan otvor otpozadi (5, za palac) i oštra ivica usnika.</li>
+    <li><b>Finkova dijatonska verzija:</b> četiri otvora koji odgovaraju tonovima do-re-mi-fa. Zahteva kost duplo dužu od nađene, pa je većina istraživača odbacuje.</li>
+    <li><b>Tidldibab (Dimkaroski, 2011):</b> tri otvora za prste (1 do 3), jedan otvor za dlan otpozadi (5) i otvoreno zvono na kraju (zarez 4), koje se može zatvoriti prstom. Duva se u usnik na proksimalnom kraju, kao u kaval. Opseg do oko tri i po oktave. Na njemu danas svira Boštjan Gombač.</li>
+  </ul>
+  <h3>Šta je ovde</h3>
+  <p><b>1 Original:</b> najbliža reprodukcija, dva otvora (2 i 3).</p>
+  <p><b>2 Tidldibab:</b> svirački oblik: tri otvora za prste, otvor za dlan (otpozadi, isprekidani krug desno) i zvono (gornji kraj, dodirni da ga zatvoriš).</p>
+  <p><b>1 Original</b> je nacrtan po meri predmeta: obris kosti, oba otvora, prelom i pukotine prate stvarni oblik. Površina je nacrtana programski, nije kopija fotografije.</p><p><b>2 Tidldibab</b> je nacrtan po meri fotografije Dimkaroskijeve rekonstrukcije: obris, tri otvora, ravan kraj usnika i proširen kraj sa zarezom (zvono) sa zaobljenim ivicama. Površina je nacrtana programski. Otvor za dlan otpozadi (isprekidani krug) je postavljen po opisu, ne izmeren. Tačne mere i materijal treba uzeti od Boštjana Gombača.</p>
+  <h3>Zvuk (probno)</h3>
+<p>Duvaš u mikrofon telefona, kao kod kavala. Prekrivanje otvora prstom skraćuje ili produžava cev i menja visinu tona. Ovaj instrument nije tempiran (nema fiksne note kao klavir), pa visina tona ovde nije podešena prema pravim merenjima, samo je orijentaciona za probu.</p>
+<p><b>Zvono</b> (gornji, prošireni kraj) se zatvara prstom ili kamerom telefona (prednja kamera je fizički na istom kraju telefona kao zvono na ekranu). Zatvaranje zvona spušta ton, kao kad Boštjan rukom reguliše zvuk na kraju cevi.</p>
+<p>Podešavanja su iza dugmeta <b>⚙</b> gore desno: osetljivost mikrofona i jačina zvuka, i posebno kamera (uključivanje, izbor objektiva, kalibracija, opseg spuštanja tona).</p>
 </div>
 
 <script>
 (function(){
   const $ = id => document.getElementById(id);
-  const video = $('preview'), graph = $('graph'), gctx = graph.getContext('2d');
-  const sm = document.createElement('canvas'); sm.width = 24; sm.height = 18;
-  const sctx = sm.getContext('2d', {willReadFrequently: true});
-
-  let stream = null, track = null, facing = 'user';
-  let lum = 0, lumRaw = 0, started = false;
-  let openRef = null, shutRef = null;          // manual calibration (null = automatic)
-  const hist = [];                              // {t, lum, closed}
-  const WINDOW_MS = 8000, GRAPH_MS = 10000;
-  let closed = 0;
-
-  function msg(t){ $('msg').textContent = t || ''; }
-
-  async function openCamera(){
-    if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {facingMode: {ideal: facing}, width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 30}}
-    });
-    track = stream.getVideoTracks()[0];
-    video.srcObject = stream;
-    video.classList.toggle('rear', facing === 'environment');
-    await video.play();
-    hist.length = 0; openRef = shutRef = null; $('range').textContent = 'automatski';
-    showDiag();
-  }
-
-  function showDiag(){
-    let s = '';
-    try{
-      const st = track.getSettings ? track.getSettings() : {};
-      const cp = track.getCapabilities ? track.getCapabilities() : {};
-      s += 'kamera: ' + (track.label || '?') + '\n';
-      s += 'rezolucija: ' + (st.width || '?') + 'x' + (st.height || '?') + ' @ ' + (st.frameRate ? Math.round(st.frameRate) : '?') + ' fps\n';
-      const keys = ['exposureMode','exposureTime','exposureCompensation','iso','brightness'];
-      keys.forEach(k => {
-        const has = (k in cp);
-        s += k + ': ' + (has ? 'podržano' : 'nije dostupno') + (st[k] !== undefined ? ' (sada: ' + st[k] + ')' : '') + '\n';
+  const svg = $('svg'), scene = $('scene');
+  const BONE_GLYPHS = {
+    D:[{d:'M8 6 V84',k:[[8,6,0,-1],[8,84,0,1]]},{d:'M8 6 C48 6 56 26 56 45 C56 64 48 84 8 84',k:[]}],
+    I:[{d:'M30 6 V84',k:[[30,6,0,-1],[30,84,0,1]]}],
+    V:[{d:'M6 6 L30 84',k:[[6,6,-0.29,-0.96]]},{d:'M54 6 L30 84',k:[[54,6,0.29,-0.96],[30,84,0,1]]}],
+    J:[{d:'M46 6 V60 C46 78 38 84 26 84 C14 84 8 76 8 66',k:[[46,6,0,-1],[8,66,0,-1]]}],
+    A:[{d:'M6 84 L30 6',k:[[6,84,-0.29,0.96],[30,6,0,-1]]},{d:'M54 84 L30 6',k:[[54,84,0.29,0.96]]},{d:'M17 56 H43',k:[[17,56,-1,0],[43,56,1,0]]}],
+    B:[{d:'M10 6 V84',k:[[10,6,0,-1],[10,84,0,1],[10,45,-1,0]]},{d:'M10 6 H30 C46 6 50 16 50 26 C50 38 42 44 30 45 H10',k:[]},{d:'M10 45 H32 C50 45 54 56 54 66 C54 78 46 84 32 84 H10',k:[]}],
+    T:[{d:'M6 6 H54',k:[[6,6,-1,0],[54,6,1,0]]},{d:'M30 6 V84',k:[[30,84,0,1]]}],
+    L:[{d:'M12 6 V84',k:[[12,6,0,-1]]},{d:'M12 84 H50',k:[[50,84,1,0]]}]
+  };
+  function boneTitle(uid){
+    const seq = [['T',0],['I',58],['D',116],['L',188],['D',260],['I',318],['B',376],['A',444],['B',510]];
+    let dark = '', ivory = '', shine = '', kDark = '', kIvory = '', kShine = '';
+    const stroke = (col, w, extra) => 'stroke="' + col + '" stroke-width="' + w + '" fill="none" stroke-linecap="round" stroke-linejoin="round"' + (extra || '');
+    seq.forEach(([ch, ox]) => {
+      BONE_GLYPHS[ch].forEach(st => {
+        dark  += '<path d="' + st.d + '" transform="translate(' + ox + ' 0)" ' + stroke('#33241a', 13.5) + '/>';
+        ivory += '<path d="' + st.d + '" transform="translate(' + ox + ' 0)" ' + stroke('url(#bg' + uid + ')', 9) + '/>';
+        shine += '<path d="' + st.d + '" transform="translate(' + (ox - 1.8) + ' 0)" ' + stroke('#fffaf0', 2.2, ' stroke-opacity="0.55"') + '/>';
+        st.k.forEach(([x, y, ux, uy]) => {
+          const px = -uy, py = ux;
+          const cx = x + ux * 2.5, cy = y + uy * 2.5;
+          [[cx + px * 4.6, cy + py * 4.6], [cx - px * 4.6, cy - py * 4.6]].forEach(([qx, qy]) => {
+            kDark  += '<circle cx="' + (qx + ox).toFixed(1) + '" cy="' + qy.toFixed(1) + '" r="7.9" fill="#33241a"/>';
+            kIvory += '<circle cx="' + (qx + ox).toFixed(1) + '" cy="' + qy.toFixed(1) + '" r="6.3" fill="url(#bg' + uid + ')"/>';
+            kShine += '<circle cx="' + (qx + ox - 1.8).toFixed(1) + '" cy="' + (qy - 1.8).toFixed(1) + '" r="1.9" fill="#fffaf0" fill-opacity="0.6"/>';
+          });
+          kIvory += '<circle cx="' + (x + ux + ox).toFixed(1) + '" cy="' + (y + uy).toFixed(1) + '" r="5.4" fill="url(#bg' + uid + ')"/>';
+        });
       });
-    }catch(e){ s = 'dijagnostika nije dostupna'; }
-    $('diag').textContent = s;
+    });
+    return '<svg viewBox="-6 -10 586 112" xmlns="http://www.w3.org/2000/svg">' +
+      '<defs><linearGradient id="bg' + uid + '" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="90">' +
+      '<stop offset="0" stop-color="#f7eed6"/><stop offset="0.55" stop-color="#dccaa0"/><stop offset="1" stop-color="#b59d72"/></linearGradient></defs>' +
+      dark + kDark + ivory + kIvory + shine + kShine + '</svg>';
   }
 
-  function sample(){
-    if(video.readyState < 2) return null;
-    sctx.drawImage(video, 0, 0, sm.width, sm.height);
-    const d = sctx.getImageData(0, 0, sm.width, sm.height).data;
-    let sum = 0;
-    for(let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i+1] + 0.0722 * d[i+2];
+  $('startTitle').innerHTML = boneTitle('k');
+
+  const D1 = "M27.5 19 L30 14.5 L33.5 17 L37 12 L40.5 15 L41.5 14 L43 18.5 L46 21.5 L50 22.5 L54 21.5 L57 18.5 L58.5 14 L60 15.5 L64 11.5 L67.5 16 L71 13.5 L72.6 18.5 C72.47 22.92 72.08 34.75 71.8 45 C71.52 55.25 71.12 68.83 70.9 80 C70.68 91.17 70.43 102 70.5 112 C70.57 122 70.97 130.33 71.3 140 C71.63 149.67 72.22 162.83 72.5 170 C72.78 177.17 72.92 180.83 73 183 L70 187 L66.5 185 L63 190 L59.5 188.5 L57.5 190.5 L50 171.8 L42.5 190.5 L39 188 L35 191 L31 186.5 L28 190 C27.9 186.67 27.3 178.33 27.4 170 C27.5 161.67 28.28 149.67 28.6 140 C28.92 130.33 29.17 122 29.3 112 C29.43 102 29.57 91.17 29.4 80 C29.23 68.83 28.62 55.17 28.3 45 C27.98 34.83 27.63 23.33 27.5 19 Z";
+  const D2 = "M27.6 13 C27.73 17.5 28.13 29.67 28.4 40 C28.67 50.33 29 63.33 29.2 75 C29.4 86.67 29.63 98.33 29.6 110 C29.57 121.67 29.3 134.17 29 145 C28.7 155.83 28.1 167.67 27.8 175 C27.5 182.33 27.3 186.67 27.2 189 L41 191.6 L50 183.6 L59 191.6 L72.9 189 C72.82 186.67 72.68 182.33 72.4 175 C72.12 167.67 71.5 155.83 71.2 145 C70.9 134.17 70.65 121.67 70.6 110 C70.55 98.33 70.7 86.67 70.9 75 C71.1 63.33 71.55 50.33 71.8 40 C72.05 29.67 72.3 17.5 72.4 13 Q50 9.2 27.6 13 Z";
+
+  // seeded random, so the rough edges are always the same
+  function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function roughRing(cx, cy, r, seed, n){
+    const R = rng(seed); let d = '';
+    for(let i = 0; i < n; i++){
+      const a = i / n * Math.PI * 2, k = r * (0.9 + 0.2 * R());
+      d += (i ? 'L' : 'M') + (cx + Math.cos(a) * k).toFixed(2) + ' ' + (cy + Math.sin(a) * k).toFixed(2);
+    }
+    return d + 'Z';
+  }
+
+  // hole definitions. kind: finger = functional hole in the bone; back = hole on the other side; bell = open end
+  const REAL = {"outer": "M98.0 131.0 L90.0 134.0 L87.0 137.0 L78.0 138.0 L74.0 142.0 L73.0 151.0 L79.0 177.0 L81.0 197.0 L84.0 204.0 L86.0 220.0 L90.0 234.0 L94.0 268.0 L98.0 286.0 L104.0 346.0 L108.0 424.0 L107.0 438.0 L109.0 462.0 L111.0 753.0 L109.0 793.0 L110.0 832.0 L103.0 913.0 L104.0 920.0 L100.0 937.0 L106.0 954.0 L113.0 964.0 L129.0 965.0 L146.0 963.0 L152.0 960.0 L171.0 958.0 L176.0 954.0 L176.0 947.0 L174.0 942.0 L173.0 908.0 L168.0 875.0 L169.0 869.0 L167.0 849.0 L169.0 847.0 L168.0 839.0 L170.0 837.0 L183.0 843.0 L201.0 859.0 L206.0 860.0 L208.0 863.0 L217.0 862.0 L218.0 866.0 L215.0 867.0 L226.0 869.0 L237.0 876.0 L240.0 874.0 L255.0 875.0 L259.0 885.0 L263.0 885.0 L266.0 891.0 L270.0 891.0 L274.0 899.0 L278.0 902.0 L294.0 904.0 L299.0 900.0 L304.0 899.0 L306.0 895.0 L304.0 875.0 L299.0 852.0 L300.0 838.0 L296.0 832.0 L289.0 785.0 L289.0 767.0 L287.0 764.0 L282.0 646.0 L282.0 614.0 L284.0 610.0 L283.0 559.0 L286.0 486.0 L289.0 463.0 L293.0 400.0 L304.0 314.0 L317.0 246.0 L318.0 233.0 L321.0 223.0 L321.0 208.0 L317.0 196.0 L314.0 192.0 L305.0 190.0 L296.0 196.0 L294.0 200.0 L293.0 210.0 L282.0 221.0 L266.0 225.0 L262.0 229.0 L257.0 243.0 L252.0 247.0 L234.0 252.0 L226.0 252.0 L222.0 249.0 L207.0 247.0 L202.0 244.0 L197.0 234.0 L186.0 226.0 L181.0 218.0 L178.0 200.0 L179.0 184.0 L176.0 174.0 L167.0 167.0 L155.0 165.0 L147.0 161.0 L141.0 155.0 L133.0 152.0 L128.0 147.0 L125.0 147.0 L111.0 134.0 L104.0 131.0Z", "cavity": "M188.0 773.0 L181.0 789.0 L165.0 799.0 L165.0 805.0 L181.0 819.0 L181.0 830.0 L175.0 831.0 L175.0 835.0 L185.0 836.0 L192.0 842.0 L192.0 851.0 L208.0 863.0 L217.0 863.0 L218.0 868.0 L242.0 866.0 L244.0 873.0 L257.0 873.0 L257.0 864.0 L249.0 858.0 L249.0 850.0 L243.0 848.0 L225.0 781.0 L211.0 770.0Z", "holeA": {"cx": 205, "cy": 668, "rx": 31.5, "ry": 36}, "holeB": {"cx": 207.5, "cy": 412, "rx": 32.5, "ry": 34.5}, "cracks": ["M218.0 631.0 L221.0 579.0 L219.0 519.0 L216.0 446.0", "M212.0 376.0 L209.0 319.0 L213.0 249.0", "M196.0 767.0 L199.0 739.0 L197.0 704.0", "M262.0 623.0 L282.0 617.0"], "outerR2": "M269.5 1058.1 L277.1 1055.0 L281.6 1050.9 L285.8 1036.7 L275.2 872.6 L273.3 760.6 L276.6 656.1 L285.9 530.8 L304.7 379.8 L319.9 297.1 L342.4 212.7 L342.8 200.9 L338.8 193.3 L330.6 187.9 L320.0 185.5 L308.9 186.8 L293.2 194.0 L278.7 204.1 L248.0 239.1 L239.1 245.9 L227.7 249.1 L202.9 251.6 L173.0 250.9 L157.5 248.2 L145.9 242.9 L136.3 235.3 L119.0 216.0 L74.5 177.5 L56.3 166.8 L42.3 165.7 L32.5 172.9 L30.1 178.7 L29.8 186.7 L57.4 266.0 L67.1 314.4 L77.0 395.3 L84.9 532.0 L86.0 570.2 L84.2 590.2 L86.4 612.6 L88.9 684.8 L88.1 720.2 L90.0 740.9 L89.9 867.1 L92.1 932.7 L88.7 1009.2 L90.3 1031.0 L94.6 1040.8 L101.9 1049.2 L110.5 1054.2 L122.6 1057.1 L214.9 1061.4Z", "holesR2": [{"cx": 182.2, "cy": 882.7, "r": 31.8}, {"cx": 190.7, "cy": 750.2, "r": 31.8}, {"cx": 185.7, "cy": 471.0, "r": 34.3}], "hollowR2": "M238.7 252.1 L231.4 247.4 L203.1 251.9 L195.8 260.2 L193.5 277.7 L189.9 276.2 L185.1 281.8 L189.7 285.8 L186.0 295.6 L199.3 299.0 L216.9 290.0 L233.0 271.6Z", "stainR2": [179.3, 645.9], "bell": {"cx": 190, "cy": 215, "r": 60}, "palm": {"cx": 190, "cy": 352, "r": 30}};
+  const HR = [{id:'h2', kind:'photo', x:REAL.holeA.cx, y:REAL.holeA.cy, r:36, lim:75}, {id:'h3', kind:'photo', x:REAL.holeB.cx, y:REAL.holeB.cy, r:34, lim:72}];
+  const HR2 = [
+    {id:'h1', kind:'photo', x:REAL.holesR2[0].cx, y:REAL.holesR2[0].cy, r:REAL.holesR2[0].r, lim:62},
+    {id:'h2', kind:'photo', x:REAL.holesR2[1].cx, y:REAL.holesR2[1].cy, r:REAL.holesR2[1].r, lim:82},
+    {id:'h3', kind:'photo', x:REAL.holesR2[2].cx, y:REAL.holesR2[2].cy, r:REAL.holesR2[2].r, lim:110},
+    {id:'p5', kind:'photo', x:REAL.palm.cx, y:REAL.palm.cy, r:REAL.palm.r, lim:52},
+    {id:'bell', kind:'photo', x:REAL.bell.cx, y:REAL.bell.cy, r:REAL.bell.r * 0.8, lim:80}
+  ];
+  const VERS = {
+    1: {label:'1 · ORIGINAL', real:'orig', vb:'0 -100 370 1080', holes: HR},
+    2: {label:'2 · TIDLDIBAB', real:'repl', vb:'0 0 370 1080', holes: HR2}
+  };
+  function realMarkup(kind){
+    const repl = kind === 'repl';
+    const o = repl ? REAL.outerR2 : REAL.outer, hA = REAL.holeA, hB = REAL.holeB;
+    let s = '<clipPath id="clipR' + kind + '"><path d="' + o + '"/></clipPath>' +
+      '<path d="' + o + '" fill="url(#' + (repl ? 'replGrad' : 'origGrad') + ')"/>' +
+      '<g clip-path="url(#clipR' + kind + ')">' +
+        '<rect x="0" y="0" width="370" height="1080" filter="url(#oMottle)" opacity="' + (repl ? '0.55' : '0.8') + '" style="mix-blend-mode:multiply"/>' +
+        '<rect x="0" y="0" width="370" height="1080" filter="url(#oDark)" opacity="' + (repl ? '0.4' : '0.6') + '"/>' +
+        '<rect x="0" y="0" width="370" height="1080" filter="url(#oLight)" opacity="0.5"/>' +
+        (repl ? '<ellipse cx="' + REAL.stainR2[0] + '" cy="' + REAL.stainR2[1] + '" rx="44" ry="30" fill="url(#stainG)" transform="rotate(-38 ' + REAL.stainR2[0] + ' ' + REAL.stainR2[1] + ')"/>' +
+                '<ellipse cx="' + (REAL.stainR2[0] + 46) + '" cy="' + (REAL.stainR2[1] - 70) + '" rx="16" ry="10" fill="url(#stainG)" opacity="0.7"/>' : '') +
+        '<path d="' + o + '" fill="none" stroke="#3a200d" stroke-width="22" filter="url(#blur6)" opacity="0.5"/>' +
+      '</g>' +
+      '<path d="' + o + '" fill="none" stroke="#2b1607" stroke-width="1.6" opacity="0.7" stroke-linejoin="round"/>';
+    if(!repl){
+      s += '<path d="' + REAL.cavity + '" fill="url(#cavGrad)" stroke="#5a3418" stroke-width="1.5" stroke-linejoin="round"/>';
+      [hA, hB].forEach(h => {
+        s += '<ellipse cx="' + h.cx + '" cy="' + h.cy + '" rx="' + (h.rx + 3) + '" ry="' + (h.ry + 3) + '" fill="none" stroke="#3a200d" stroke-width="5" opacity="0.5"/>' +
+             '<ellipse cx="' + h.cx + '" cy="' + h.cy + '" rx="' + h.rx + '" ry="' + h.ry + '" fill="url(#holeGrad)" stroke="#f0c48a" stroke-opacity="0.35" stroke-width="1.6"/>';
+      });
+      REAL.cracks.forEach(c => { s += '<path d="' + c + '" fill="none" stroke="#4d2a10" stroke-width="1.5" opacity="0.8" stroke-linecap="round" stroke-linejoin="round"/>'; });
+    } else {
+      if(REAL.hollowR2) s += '<g clip-path="url(#clipR' + kind + ')"><path d="' + REAL.hollowR2 + '" fill="#2a170a" fill-opacity="0.5" stroke="none"/></g>';
+      REAL.holesR2.forEach(h => {
+        s += '<circle cx="' + h.cx + '" cy="' + h.cy + '" r="' + (h.r + 3.5) + '" fill="none" stroke="#3a200d" stroke-width="5" opacity="0.45"/>' +
+             '<circle cx="' + h.cx + '" cy="' + h.cy + '" r="' + h.r + '" fill="url(#holeGrad)" stroke="#f0d8a4" stroke-opacity="0.4" stroke-width="1.8"/>';
+      });
+      const p = REAL.palm;
+      s += '<circle cx="' + p.cx + '" cy="' + p.cy + '" r="' + p.r + '" fill="#120a06" fill-opacity="0.35" stroke="#fff0cf" stroke-opacity="0.8" stroke-width="1.8" stroke-dasharray="6 5"/>' +
+           '<text class="lbl" x="' + p.cx + '" y="' + (p.cy + 5) + '" text-anchor="middle" style="font-size:15px">5</text>' +
+           '<text class="lbl dim" x="' + p.cx + '" y="' + (p.cy + p.r + 15) + '" text-anchor="middle" style="font-size:10px">dlan, zadnja strana</text>' +
+           '<text class="lbl dim" x="' + REAL.bell.cx + '" y="' + (REAL.bell.cy - 76) + '" text-anchor="middle" style="font-size:10px">zvono: zatvori prstom</text>';
+    }
+    (repl ? HR2 : HR).forEach(h => {
+      const k = h.id === 'bell' ? 1.3 : 1.55;
+      s += '<ellipse class="glow" id="gl_' + h.id + '" cx="' + h.x + '" cy="' + h.y + '" rx="' + (h.r * k) + '" ry="' + (h.r * k) + '" fill="url(#finger)"/>';
+    });
+    return s;
+  }
+  let ver = 1;
+  try{ const sv = parseInt(localStorage.getItem('divjababa.kost.v2') || '2', 10); if(VERS[sv]) ver = sv; }catch(_){}
+  let active = [];
+
+  function boneLayers(d, uid){
+    return '<path d="' + d + '" fill="#000" opacity="0.55" filter="url(#blur)" transform="translate(2.6 3.2)"/>' +
+      '<clipPath id="clip' + uid + '"><path d="' + d + '"/></clipPath>' +
+      '<path d="' + d + '" fill="url(#boneGrad)"/>' +
+      '<g clip-path="url(#clip' + uid + ')">' +
+        '<rect x="0" y="0" width="100" height="200" filter="url(#mottle)" opacity="0.75" style="mix-blend-mode:multiply"/>' +
+        '<rect x="0" y="0" width="100" height="200" filter="url(#pores)" opacity="0.55"/>' +
+        '<rect x="0" y="0" width="100" height="200" fill="url(#endStain)"/>' +
+        '<rect x="33" y="0" width="8" height="200" fill="url(#spec)" opacity="0.32"/>' +
+        '<g stroke="#3a2714" stroke-width="0.28" fill="none" opacity="0.5" stroke-linecap="round">' +
+          '<path d="M36 38 q1.5 6 0.6 13 t1 12"/><path d="M63 92 q-1 8 0.4 15 t-0.5 10"/><path d="M41 146 q1 4 0 9"/><path d="M58 24 q1.2 5 0.3 10"/>' +
+        '</g>' +
+      '</g>' +
+      '<path d="' + d + '" fill="none" stroke="#2a1c10" stroke-width="0.7" opacity="0.75"/>';
+  }
+
+  function holeMarkup(h, seed){
+    if(h.kind === 'bell'){
+      return '<g id="g_' + h.id + '"><ellipse cx="' + h.x + '" cy="' + h.y + '" rx="' + h.rx + '" ry="' + h.ry + '" fill="#0a0604" stroke="#f0dcae" stroke-opacity="0.45" stroke-width="0.5"/>' +
+        '<ellipse cx="' + h.x + '" cy="' + (h.y + 0.4) + '" rx="' + (h.rx - 3) + '" ry="' + (h.ry - 1) + '" fill="#000" opacity="0.7"/>' +
+        '<ellipse class="glow" id="gl_' + h.id + '" cx="' + h.x + '" cy="' + h.y + '" rx="' + (h.rx + 2) + '" ry="' + (h.ry + 3) + '" fill="url(#finger)"/></g>';
+    }
+    const ring = roughRing(h.x, h.y, h.r, seed, 26), outer = roughRing(h.x, h.y, h.r * 1.18, seed + 7, 26);
+    if(h.kind === 'back'){
+      return '<g id="g_' + h.id + '"><circle cx="' + h.x + '" cy="' + h.y + '" r="' + h.r + '" fill="#120a06" fill-opacity="0.6" stroke="#f0dcae" stroke-opacity="0.7" stroke-width="0.6" stroke-dasharray="1.8 1.5"/>' +
+        '<text class="lbl" x="' + h.x + '" y="' + (h.y + 1.5) + '" text-anchor="middle">' + h.lbl + '</text>' +
+        '<text class="lbl dim" x="' + h.x + '" y="' + (h.y + h.r + 5) + '" text-anchor="middle" style="font-size:2.6px">zadnja strana</text>' +
+        '<circle class="glow" id="gl_' + h.id + '" cx="' + h.x + '" cy="' + h.y + '" r="' + (h.r * 1.6) + '" fill="url(#finger)"/></g>';
+    }
+    return '<g id="g_' + h.id + '"><path d="' + outer + '" fill="none" stroke="#2a1a0e" stroke-width="1.3" opacity="0.5"/>' +
+      '<path d="' + ring + '" fill="url(#holeGrad)" stroke="#f0dcae" stroke-opacity="0.32" stroke-width="0.5"/>' +
+      '<circle class="glow" id="gl_' + h.id + '" cx="' + h.x + '" cy="' + h.y + '" r="' + (h.r * 1.75) + '" fill="url(#finger)"/>' +
+      '<text class="lbl" x="' + (h.x + h.r + 3.2) + '" y="' + (h.y + 1.4) + '">' + h.lbl + '</text></g>';
+  }
+
+  function render(){
+    const V = VERS[ver];
+    svg.setAttribute('viewBox', V.vb);
+    document.body.style.background = V.real ? '#000' : '';
+    if(V.real){
+      scene.innerHTML = realMarkup(V.real);
+      active = V.holes;
+      $('verLbl').textContent = V.label;
+      $('b1').classList.toggle('on', ver === 1); $('b2').classList.toggle('on', ver === 2);
+      pointers.clear(); paint();
+      return;
+    }
+    let s = boneLayers(V.d, ver);
+    (V.deco || []).forEach((c, i) => {
+      s += '<path d="' + roughRing(c.x, c.y, c.r, 90 + i, 20) + '" fill="url(#holeGrad)" stroke="#f0dcae" stroke-opacity="0.3" stroke-width="0.5"/>';
+    });
+    V.holes.forEach((h, i) => { s += holeMarkup(h, 11 + i * 5); });
+    (V.notes || []).forEach(n => {
+      s += '<g><circle cx="' + n.x + '" cy="' + n.y + '" r="' + n.r + '" fill="none" stroke="#f0dcae" stroke-opacity="0.45" stroke-width="0.5" stroke-dasharray="1.6 1.6"/>' +
+           '<text class="lbl dim" x="' + n.x + '" y="' + (n.y + 1.4) + '" text-anchor="middle">' + n.lbl + '</text>' +
+           '<text class="lbl dim" x="' + n.x + '" y="' + (n.y + n.r + 4.4) + '" text-anchor="middle" style="font-size:2.5px">zarez, zadnja strana</text></g>';
+    });
+    scene.innerHTML = s;
+    active = V.holes.filter(h => h.kind !== 'deco');
+    $('verLbl').textContent = V.label;
+    $('b1').classList.toggle('on', ver === 1);
+    $('b2').classList.toggle('on', ver === 2);
+    pointers.clear(); paint();
+  }
+
+  // ---- touch: hold a finger on a hole to close it ----
+  const pointers = new Map();
+  function toSvg(x, y){
+    const pt = svg.createSVGPoint(); pt.x = x; pt.y = y;
+    const m = svg.getScreenCTM();
+    return m ? pt.matrixTransform(m.inverse()) : {x: 0, y: 0};
+  }
+  function hit(p){
+    let best = null, bd = 1e9;
+    active.forEach(h => {
+      let d, lim;
+      if(h.kind === 'bell'){
+        d = Math.hypot((p.x - h.x) / (h.rx / h.ry), p.y - h.y); lim = h.ry * 3.4;
+      } else { d = Math.hypot(p.x - h.x, p.y - h.y); lim = h.lim || Math.max(h.r * 2.1, 12); }
+      if(d < lim && d < bd){ bd = d; best = h; }
+    });
+    return best;
+  }
+  let coveredSet = new Set();
+  function paint(){
+    const on = new Set();
+    pointers.forEach(pt => { const h = hit(toSvg(pt.x, pt.y)); if(h) on.add(h.id); });
+    active.forEach(h => { const g = $('gl_' + h.id); if(g) g.classList.toggle('on', on.has(h.id)); });
+    coveredSet = on;
+    updatePitch();
+  }
+  const stage = $('stage');
+  stage.addEventListener('pointerdown', e => { e.preventDefault(); pointers.set(e.pointerId, {x: e.clientX, y: e.clientY}); try{ stage.setPointerCapture(e.pointerId); }catch(_){} paint(); });
+  stage.addEventListener('pointermove', e => { if(!pointers.has(e.pointerId)) return; pointers.set(e.pointerId, {x: e.clientX, y: e.clientY}); paint(); });
+  const up = e => { pointers.delete(e.pointerId); paint(); };
+  stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up); stage.addEventListener('lostpointercapture', up);
+  stage.addEventListener('contextmenu', e => e.preventDefault());
+
+  // ---- pitch model: position of each hole along the tube decides the effective air-column length ----
+  // Not tempered (real instrument has no fixed notes) - this mapping is only for testing, not a measured tuning.
+  const TUBE = {orig: {mouth: 965, bell: 104}, repl: {mouth: 1062, bell: 190}};
+  const BASE_LOW = 174.61; // arbitrary anchor pitch (F3) for "everything closed" - not a measured value
+  function holePos(h, key){
+    const T = TUBE[key];
+    return Math.max(0, Math.min(1, (T.mouth - h.y) / (T.mouth - T.bell)));
+  }
+  function currentEffLen(){
+    const V = VERS[ver], key = V.real;
+    let firstOpenPos = 1;
+    V.holes.forEach(h => {
+      if(h.id === 'bell' || coveredSet.has(h.id)) return;
+      const p = holePos(h, key);
+      if(p < firstOpenPos) firstOpenPos = p;
+    });
+    return Math.max(0.12, firstOpenPos);
+  }
+
+  // ---- audio engine ----
+  let audioCtx, master, env, noiseGain, osc, toneLP, analyser, timeData;
+  let micOn = false, micBreath = false, manualBlow = false, breathing = false;
+  let smoothedDb = -70, aboveSince = 0, belowSince = 0;
+  const DB_FLOOR = -70, ONSET_MS = 60, RELEASE_MS = 120, RELEASE_DB = 6;
+  const P = {sens: 50, vol: 70};
+  let bendST = 7, camClosed = 0, camOn = false, camStream = null, camTrack = null, camFacing = 'user';
+  let camOpenRef = null, camShutRef = null, camLum = 0;
+  const camHist = [];
+
+  function buildSynth(){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    master = audioCtx.createGain(); master.gain.value = P.vol / 100 * 0.9;
+    const comp = audioCtx.createDynamicsCompressor();
+    comp.threshold.value = -10; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
+    const real = new Float32Array(6), imag = new Float32Array([0, 1, 0.28, 0.12, 0.06, 0.03]);
+    osc = audioCtx.createOscillator(); osc.setPeriodicWave(audioCtx.createPeriodicWave(real, imag));
+    osc.frequency.value = BASE_LOW;
+    const lfo = audioCtx.createOscillator(); lfo.frequency.value = 4.6;
+    const lfoGain = audioCtx.createGain(); lfoGain.gain.value = 3;
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune);
+    toneLP = audioCtx.createBiquadFilter(); toneLP.type = 'lowpass'; toneLP.frequency.value = 3600; toneLP.Q.value = 0.5;
+    env = audioCtx.createGain(); env.gain.value = 0;
+    const nbuf = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+    const nd = nbuf.getChannelData(0); for(let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    const noise = audioCtx.createBufferSource(); noise.buffer = nbuf; noise.loop = true;
+    const nbp = audioCtx.createBiquadFilter(); nbp.type = 'bandpass'; nbp.frequency.value = 3200; nbp.Q.value = 0.8;
+    noiseGain = audioCtx.createGain(); noiseGain.gain.value = 0;
+    osc.connect(toneLP); toneLP.connect(env); env.connect(master);
+    noise.connect(nbp); nbp.connect(noiseGain); noiseGain.connect(master);
+    master.connect(comp); comp.connect(audioCtx.destination);
+    osc.start(); lfo.start(); noise.start();
+  }
+  function updatePitch(){
+    if(!osc || !audioCtx) return;
+    const effLen = currentEffLen();
+    const fingerBell = coveredSet.has('bell');
+    const closed = Math.max(camClosed, fingerBell ? 1 : 0);
+    const bendFactor = Math.pow(2, -closed * bendST / 12);
+    const f = BASE_LOW * Math.pow(1 / effLen, 0.5) * bendFactor;
+    osc.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.02);
+    if(toneLP) toneLP.frequency.setTargetAtTime(3600 * (1 - 0.4 * closed), audioCtx.currentTime, 0.05);
+  }
+  function setBreathing(state){
+    if(state === breathing || !audioCtx) return;
+    breathing = state;
+    const t = audioCtx.currentTime;
+    env.gain.cancelScheduledValues(t); noiseGain.gain.cancelScheduledValues(t);
+    if(state){
+      env.gain.setTargetAtTime(0.85, t, 0.05);
+      noiseGain.gain.setValueAtTime(0.14, t);
+      noiseGain.gain.setTargetAtTime(0.05, t + 0.01, 0.06);
+    } else {
+      env.gain.setTargetAtTime(0, t, 0.12);
+      noiseGain.gain.setTargetAtTime(0, t, 0.12);
+    }
+  }
+  function sensToDb(s){ return -10 - (s / 100) * 45; }
+  async function micStart(){
+    const stream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+    const src = audioCtx.createMediaStreamSource(stream);
+    const g = audioCtx.createGain(); g.gain.value = 0.5;
+    const hp = audioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 30;
+    const lp1 = audioCtx.createBiquadFilter(); lp1.type = 'lowpass'; lp1.frequency.value = 250; lp1.Q.value = 0.707;
+    const lp2 = audioCtx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 250; lp2.Q.value = 0.707;
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048; timeData = new Float32Array(analyser.fftSize);
+    src.connect(g); g.connect(hp); hp.connect(lp1); lp1.connect(lp2); lp2.connect(analyser);
+    micOn = true; $('micBtn').textContent = 'MIKROFON: DA'; $('micBtn').classList.add('on');
+  }
+
+  // ---- camera: covering the lens (top of the phone, same end as the drawn bell) lowers the pitch ----
+  const camVideo = document.createElement('video');
+  camVideo.setAttribute('playsinline', ''); camVideo.muted = true;
+  camVideo.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none;';
+  document.body.appendChild(camVideo);
+  const camSm = document.createElement('canvas'); camSm.width = 24; camSm.height = 18;
+  const camCtx = camSm.getContext('2d', {willReadFrequently: true});
+  function panelMsg(t){ $('panelMsg').textContent = t || ''; }
+  async function camOpen(){
+    if(camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    camStream = await navigator.mediaDevices.getUserMedia({audio: false, video: {facingMode: {ideal: camFacing}, width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 30}}});
+    camTrack = camStream.getVideoTracks()[0];
+    camVideo.srcObject = camStream; await camVideo.play();
+    camHist.length = 0; camLum = 0;
+    setTimeout(async () => { try{ await camTrack.applyConstraints({advanced: [{exposureMode: 'manual'}]}); }catch(_){} }, 1200);
+  }
+  function camSample(){
+    if(camVideo.readyState < 2) return null;
+    camCtx.drawImage(camVideo, 0, 0, camSm.width, camSm.height);
+    const d = camCtx.getImageData(0, 0, camSm.width, camSm.height).data;
+    let sum = 0; for(let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i+1] + 0.0722 * d[i+2];
     return sum / (d.length / 4);
   }
-
-  function computeClosed(now){
-    // fixed range after calibration, otherwise the range of the last few seconds
+  function camComputeClosed(now){
     let hi, lo;
-    if(openRef !== null && shutRef !== null){ hi = openRef; lo = shutRef; }
+    if(camOpenRef !== null && camShutRef !== null){ hi = camOpenRef; lo = camShutRef; }
     else {
       hi = -1; lo = 999;
-      for(let i = hist.length - 1; i >= 0 && now - hist[i].t <= WINDOW_MS; i--){ hist[i].lum > hi && (hi = hist[i].lum); hist[i].lum < lo && (lo = hist[i].lum); }
-      if(openRef !== null){ hi = openRef; }
+      for(let i = camHist.length - 1; i >= 0 && now - camHist[i].t <= 8000; i--){ if(camHist[i].lum > hi) hi = camHist[i].lum; if(camHist[i].lum < lo) lo = camHist[i].lum; }
     }
-    if(hi - lo < 6) return 0;                       // nothing changes: treat as open
-    return Math.max(0, Math.min(1, (hi - lum) / (hi - lo)));
+    if(hi - lo < 6) return 0;
+    return Math.max(0, Math.min(1, (hi - camLum) / (hi - lo)));
   }
-
-  // ---- sound: pitch falls and tone darkens as the "bell" is closed ----
-  let actx = null, osc, gain, lp, soundOn = false;
-  function soundStart(){
-    if(!actx){
-      actx = new (window.AudioContext || window.webkitAudioContext)();
-      osc = actx.createOscillator(); gain = actx.createGain(); lp = actx.createBiquadFilter();
-      const imag = new Float32Array([0, 1, 0.3, 0.1, 0.05]); osc.setPeriodicWave(actx.createPeriodicWave(new Float32Array(5), imag));
-      lp.type = 'lowpass'; lp.frequency.value = 4000; gain.gain.value = 0;
-      osc.connect(lp); lp.connect(gain); gain.connect(actx.destination); osc.start();
-    }
-    if(actx.state === 'suspended') actx.resume();
-  }
-  function soundUpdate(){
-    if(!actx) return;
-    const t = actx.currentTime;
-    osc.frequency.setTargetAtTime(523.25 * Math.pow(2, -closed * 7 / 12), t, 0.03);   // up to 7 semitones lower
-    lp.frequency.setTargetAtTime(4200 - closed * 3200, t, 0.05);
-    gain.gain.setTargetAtTime(soundOn ? 0.25 : 0, t, 0.05);
-  }
-
-  // ---- drawing ----
-  function drawGraph(now){
-    const W = graph.width, H = graph.height;
-    gctx.clearRect(0, 0, W, H);
-    gctx.strokeStyle = '#2a2038'; gctx.lineWidth = 1;
-    for(let i = 1; i < 4; i++){ gctx.beginPath(); gctx.moveTo(0, H * i / 4); gctx.lineTo(W, H * i / 4); gctx.stroke(); }
-    const pts = hist.filter(h => now - h.t <= GRAPH_MS);
-    if(pts.length < 2) return;
-    // light (grey)
-    gctx.strokeStyle = '#8a7ea0'; gctx.lineWidth = 2; gctx.beginPath();
-    pts.forEach((h, i) => { const x = W - (now - h.t) / GRAPH_MS * W, y = H - (h.lum / 255) * H * 0.96 - 4; i ? gctx.lineTo(x, y) : gctx.moveTo(x, y); });
-    gctx.stroke();
-    // closed % (gold)
-    gctx.strokeStyle = '#e0a860'; gctx.lineWidth = 4; gctx.beginPath();
-    pts.forEach((h, i) => { const x = W - (now - h.t) / GRAPH_MS * W, y = H - h.closed * H * 0.92 - 8; i ? gctx.lineTo(x, y) : gctx.moveTo(x, y); });
-    gctx.stroke();
-    gctx.fillStyle = '#a99bbd'; gctx.font = '22px sans-serif';
-    gctx.fillText('zlatna linija = zatvoreno   siva = svetlo', 12, 26);
-  }
-
-  function frame(){
-    requestAnimationFrame(frame);
-    const v = sample();
-    if(v === null) return;
-    const now = performance.now();
-    lumRaw = v; lum += (v - lum) * 0.4;
-    closed = computeClosed(now);
-    hist.push({t: now, lum: lum, closed: closed});
-    while(hist.length && now - hist[0].t > GRAPH_MS + 500) hist.shift();
-    $('pct').textContent = Math.round(closed * 100);
-    $('barFill').style.width = (closed * 100) + '%';
-    $('lum').textContent = Math.round(lum);
-    drawGraph(now);
-    soundUpdate();
-  }
-
-  // ---- buttons ----
-  function avgLast(ms){
+  function camAvg(ms){
     const now = performance.now(); let s = 0, n = 0;
-    for(let i = hist.length - 1; i >= 0 && now - hist[i].t <= ms; i--){ s += hist[i].lum; n++; }
-    return n ? s / n : lum;
+    for(let i = camHist.length - 1; i >= 0 && now - camHist[i].t <= ms; i--){ s += camHist[i].lum; n++; }
+    return n ? s / n : camLum;
   }
-  function calLabel(){ $('range').textContent = (openRef !== null ? 'otvoreno ' + Math.round(openRef) : 'otvoreno: auto') + ' · ' + (shutRef !== null ? 'zaklonjeno ' + Math.round(shutRef) : 'zaklonjeno: auto'); }
-  $('calOpen').addEventListener('click', () => { msg('Drži kameru otkrivenu 1 sekundu...'); setTimeout(() => { openRef = avgLast(900); calLabel(); msg('Otvoreno zapamćeno.'); }, 1000); });
-  $('calShut').addEventListener('click', () => { msg('Zakloni kameru potpuno 1 sekundu...'); setTimeout(() => { shutRef = avgLast(900); calLabel(); msg('Zaklonjeno zapamćeno.'); }, 1000); });
-  $('autoBtn').addEventListener('click', () => { openRef = shutRef = null; $('range').textContent = 'automatski'; msg('Opseg se sada sam prilagođava.'); });
-  $('camBtn').addEventListener('click', async () => {
-    facing = facing === 'user' ? 'environment' : 'user';
-    $('camBtn').textContent = 'KAMERA: ' + (facing === 'user' ? 'PREDNJA' : 'ZADNJA');
-    try{ await openCamera(); msg(''); }catch(e){ msg('Ne mogu da uključim tu kameru (' + (e && e.name) + ').'); }
-  });
-  $('sndBtn').addEventListener('click', () => {
-    soundOn = !soundOn; if(soundOn) soundStart();
-    $('sndBtn').textContent = 'ZVUK: ' + (soundOn ? 'UKLJUČEN' : 'ISKLJUČEN'); $('sndBtn').classList.toggle('on', soundOn);
-  });
-  $('expBtn').addEventListener('click', async () => {
-    if(!track){ return; }
-    try{
-      await track.applyConstraints({advanced: [{exposureMode: 'manual'}]});
-      msg('Ekspozicija zaključana (ako telefon dozvoljava). Proveri opet zaklanjanje.');
-    }catch(e){
-      msg('Telefon ne dozvoljava zaključavanje ekspozicije iz pregledača. Koristi kalibraciju.');
-    }
-    showDiag();
-  });
 
-  async function start(){
-    try{
-      await openCamera();
-      $('startCard').style.display = 'none';
-      started = true;
-      try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(_){}
-      requestAnimationFrame(frame);
-    }catch(e){
-      const n = e && e.name;
-      $('startCard').querySelector('p').textContent = (n === 'NotAllowedError' || n === 'PermissionDeniedError')
-        ? 'Kamera nije dozvoljena. Dodirni ikonicu pored adrese, dozvoli kameru i osveži stranicu.'
-        : 'Kamera nije pokrenuta (' + (n || 'greška') + '). Ako si u Claude prikazu, otvori stranicu u Chrome-u.';
+  function loop(){
+    requestAnimationFrame(loop);
+    if(micOn && analyser){
+      analyser.getFloatTimeDomainData(timeData);
+      let sum = 0; for(let i = 0; i < timeData.length; i++) sum += timeData[i] * timeData[i];
+      const rms = Math.sqrt(sum / timeData.length);
+      const db = Math.max(DB_FLOOR, rms > 1e-5 ? 20 * Math.log10(rms) : DB_FLOOR);
+      smoothedDb += (db - smoothedDb) * (db > smoothedDb ? 0.5 : 0.12);
+      const thr = sensToDb(P.sens), now = performance.now();
+      if(!micBreath){
+        if(smoothedDb > thr){ if(!aboveSince) aboveSince = now; if(now - aboveSince >= ONSET_MS){ micBreath = true; aboveSince = 0; belowSince = 0; } } else aboveSince = 0;
+      } else {
+        if(smoothedDb < thr - RELEASE_DB){ if(!belowSince) belowSince = now; if(now - belowSince >= RELEASE_MS){ micBreath = false; belowSince = 0; aboveSince = 0; } } else belowSince = 0;
+      }
+      const mp = Math.max(0, Math.min(100, (smoothedDb - DB_FLOOR) / (-DB_FLOOR) * 100));
+      $('meterFill').style.width = mp + '%'; $('v_db').textContent = Math.round(mp) + '%';
     }
+    if(camOn){
+      const v = camSample();
+      if(v !== null){
+        const now = performance.now();
+        camLum += (v - camLum) * (camLum === 0 ? 1 : 0.4);
+        camHist.push({t: now, lum: camLum});
+        while(camHist.length && now - camHist[0].t > 9000) camHist.shift();
+        camClosed = camComputeClosed(now);
+        $('camFill').style.width = (camClosed * 100) + '%'; $('v_cam').textContent = Math.round(camClosed * 100) + '%';
+      }
+    }
+    updatePitch();
+    setBreathing(micBreath || manualBlow);
   }
-  $('startBtn').addEventListener('click', start);
+
+  // ---- panel wiring ----
+  function bindSlider(id, key, cb){
+    const el = $(id), out = $('v_' + id);
+    const set = () => { P[key] = parseInt(el.value, 10); out.textContent = P[key] + '%'; if(cb) cb(); };
+    el.addEventListener('input', set); set();
+  }
+  bindSlider('sens', 'sens');
+  bindSlider('vol', 'vol', () => { if(master && audioCtx) master.gain.setTargetAtTime(P.vol / 100 * 0.9, audioCtx.currentTime, 0.02); });
+  $('bend').addEventListener('input', () => { bendST = parseInt($('bend').value, 10); $('v_bend').textContent = bendST + ' pt'; });
+
+  let started = false;
+  async function ensureAudio(){ if(!started){ buildSynth(); started = true; requestAnimationFrame(loop); } if(audioCtx.state === 'suspended') await audioCtx.resume(); }
+
+  $('micBtn').addEventListener('click', async () => {
+    await ensureAudio();
+    if(micOn){ micOn = false; $('micBtn').textContent = 'MIKROFON: NE'; $('micBtn').classList.remove('on'); return; }
+    try{ await micStart(); panelMsg(''); }
+    catch(e){
+      const n = e && e.name;
+      panelMsg((n === 'NotAllowedError' || n === 'PermissionDeniedError') ? 'Mikrofon nije dozvoljen. Dozvoli ga u podešavanjima sajta i osveži stranicu.' : 'Mikrofon nije pokrenut (' + (n || 'greška') + ').');
+    }
+  });
+  $('blowBtn').addEventListener('pointerdown', async e => { e.preventDefault(); await ensureAudio(); manualBlow = true; $('blowBtn').classList.add('on'); try{ $('blowBtn').setPointerCapture(e.pointerId); }catch(_){} });
+  const blowUp = () => { manualBlow = false; $('blowBtn').classList.remove('on'); };
+  $('blowBtn').addEventListener('pointerup', blowUp); $('blowBtn').addEventListener('pointercancel', blowUp); $('blowBtn').addEventListener('lostpointercapture', blowUp);
+
+  $('camBtn').addEventListener('click', async () => {
+    await ensureAudio();
+    if(camOn){ if(camStream) camStream.getTracks().forEach(t => t.stop()); camStream = null; camOn = false; camClosed = 0; camHist.length = 0; $('camFill').style.width = '0%'; $('v_cam').textContent = '0%'; $('camBtn').textContent = 'KAMERA: NE'; $('camBtn').classList.remove('on'); return; }
+    try{ await camOpen(); camOn = true; $('camBtn').textContent = 'KAMERA: DA'; $('camBtn').classList.add('on'); panelMsg('Kamera radi. Zakloni je rukom da zatvoriš zvono.'); }
+    catch(e){
+      const n = e && e.name;
+      panelMsg((n === 'NotAllowedError' || n === 'PermissionDeniedError') ? 'Kamera nije dozvoljena. Dozvoli je u podešavanjima sajta i osveži stranicu.' : 'Kamera nije pokrenuta (' + (n || 'greška') + ').');
+    }
+  });
+  $('camFace').addEventListener('click', async () => {
+    camFacing = camFacing === 'user' ? 'environment' : 'user';
+    $('camFace').textContent = camFacing === 'user' ? 'PREDNJA' : 'ZADNJA';
+    if(camOn){ try{ await camOpen(); }catch(_){ panelMsg('Ne mogu da uključim tu kameru.'); } }
+  });
+  $('camCal').addEventListener('click', () => {
+    if(!camOn){ panelMsg('Prvo uključi kameru.'); return; }
+    panelMsg('Drži kameru otkrivenu...');
+    setTimeout(() => { camOpenRef = camAvg(800); panelMsg('Sada zakloni kameru potpuno...');
+      setTimeout(() => { camShutRef = camAvg(800); panelMsg('Kalibrisano: otvoreno ' + Math.round(camOpenRef) + ', zaklonjeno ' + Math.round(camShutRef) + '.'); }, 2600);
+    }, 1500);
+  });
+  $('camAuto').addEventListener('click', () => { camOpenRef = camShutRef = null; panelMsg('Opseg se sam prilagođava.'); });
+
+  $('setBtn').addEventListener('click', () => $('panel').classList.add('show'));
+  $('panelClose').addEventListener('click', () => $('panel').classList.remove('show'));
+
+  // ---- UI ----
+  function setVer(v){ ver = v; try{ localStorage.setItem('divjababa.kost.v2', String(v)); }catch(_){} render(); }
+  $('b1').addEventListener('click', () => setVer(1));
+  $('b2').addEventListener('click', () => setVer(2));
+  $('infoBtn').addEventListener('click', () => $('info').classList.add('show'));
+  $('infoClose').addEventListener('click', () => $('info').classList.remove('show'));
+
+  async function goFull(){
+    const el = document.documentElement;
+    try{
+      if(document.fullscreenElement || document.webkitFullscreenElement){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+      if(el.requestFullscreen) await el.requestFullscreen({navigationUI: 'hide'});
+      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }catch(_){}
+  }
+  let wake = null;
+  async function keepAwake(){ try{ if(navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); }catch(_){} }
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') keepAwake(); });
+  $('fsBtn').addEventListener('click', goFull);
+  $('startBtn').addEventListener('click', async () => { await goFull(); $('startCard').style.display = 'none'; keepAwake(); });
+  $('startNoFs').addEventListener('click', () => { $('startCard').style.display = 'none'; keepAwake(); });
+
+  render();
 })();
 </script>
 </body>
