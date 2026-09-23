@@ -129,12 +129,14 @@
   <div class="ctl"><label><span>ČISTOĆA DAHA</span><b id="v_flat">0%</b></label><div class="meter"><i id="flatFill"></i></div></div>
   <div class="two"><button class="modeBtn" id="micBtn" type="button">MIKROFON: NE</button><button class="modeBtn" id="blowBtn" type="button">DUVAJ (drži)</button></div>
   <div class="two"><button class="modeBtn" id="micCal" type="button">KALIBRIŠI TIŠINU</button><button class="modeBtn" id="micAuto" type="button">PONIŠTI</button></div>
+  <div class="ctl"><label><span>PREPOZNAVANJE DAHA</span><b id="v_sim">0%</b></label><div class="meter"><i id="simFill"></i></div></div>
+  <div class="two"><button class="modeBtn" id="breathCal" type="button">NAUČI MOJ DAH</button><button class="modeBtn" id="breathReset" type="button">ZABORAVI</button></div>
 
   <h3>Zvono (kamera)</h3>
   <div class="ctl"><label><span>ZATVORENOST</span><b id="v_cam">0%</b></label><div class="meter"><i id="camFill"></i></div></div>
   <div class="two"><button class="modeBtn" id="camBtn" type="button">KAMERA: NE</button><button class="modeBtn" id="camFace" type="button">PREDNJA</button></div>
   <div class="two"><button class="modeBtn" id="camCal" type="button">KALIBRIŠI</button><button class="modeBtn" id="camAuto" type="button">AUTO</button></div>
-  <div class="ctl"><label><span>OPSEG</span><b id="v_bend">7 pt</b></label><input type="range" id="bend" min="1" max="12" value="7"></div>
+  <div class="ctl"><label><span>OPSEG</span><b id="v_bend">12 pt</b></label><input type="range" id="bend" min="1" max="12" value="12"></div>
   <div id="panelMsg"></div>
 </div>
 
@@ -159,10 +161,11 @@
   <p><b>2 Tidldibab:</b> svirački oblik: tri otvora za prste, otvor za dlan (otpozadi, isprekidani krug desno) i zvono (gornji kraj, dodirni da ga zatvoriš).</p>
   <p><b>1 Original</b> je nacrtan po meri predmeta: obris kosti, oba otvora, prelom i pukotine prate stvarni oblik. Površina je nacrtana programski, nije kopija fotografije.</p><p><b>2 Tidldibab</b> je nacrtan po meri fotografije Dimkaroskijeve rekonstrukcije: obris, tri otvora, ravan kraj usnika i proširen kraj sa zarezom (zvono) sa zaobljenim ivicama. Površina je nacrtana programski. Otvor za dlan otpozadi (isprekidani krug) je postavljen po opisu, ne izmeren. Tačne mere i materijal treba uzeti od Boštjana Gombača.</p>
   <h3>Zvuk (probno)</h3>
-<p>Duvaš u mikrofon telefona, kao kod kavala. Prekrivanje otvora prstom skraćuje ili produžava cev i menja visinu tona. Ovaj instrument nije tempiran (nema fiksne note kao klavir), pa visina tona ovde nije podešena prema pravim merenjima, samo je orijentaciona za probu.</p>
+<p>Duvaš u mikrofon telefona, kao kod kavala. Pravilo je: <b>prva otvorena rupica gledano od usnika ka zvonu određuje ton</b> — sve što je otvoreno dalje ka zvonu (uključujući dlan) tada ništa ne menja. Potvrđene note, počev od svega zatvorenog: <b>Cis</b> (sve zatvoreno), <b>D</b> (otvoren dlan), <b>E</b> (dlan + rupica najbliža zvonu), <b>A</b> (dlan + ta rupica + srednja). Rupica najbliža usniku još nema svoju notu, pa privremeno svira kao A. Jače duvanje na istom hvatu diže ton za oktavu (overblow).</p>
 <p><b>Zvono</b> (gornji, prošireni kraj) se zatvara prstom ili kamerom telefona (prednja kamera je fizički na istom kraju telefona kao zvono na ekranu). Zatvaranje zvona spušta ton, kao kad Boštjan rukom reguliše zvuk na kraju cevi.</p>
 <p>Podešavanja su iza dugmeta <b>⚙</b> gore desno: osetljivost mikrofona i jačina zvuka, i posebno kamera (uključivanje, izbor objektiva, kalibracija, opseg spuštanja tona).</p>
-<p><b>Zvuk instrumenta koji se vraća u mikrofon:</b> pošto je osnovni ton instrumenta i sam nizak, može da "prevari" mikrofon i sam sebe drži uključenim. Zato mikrofon sada, osim jačine, gleda i da li je zvuk šum daha ili čist ton (<b>ČISTOĆA DAHA</b>) — čist ton instrumenta se ignoriše. <b>KALIBRIŠI TIŠINU</b> izmeri buku prostorije dok ćutiš i podigne prag iznad nje; <b>PONIŠTI</b> to vraća na obično podešavanje. Ako i dalje bude nepouzdano, slušalice to potpuno rešavaju.</p>
+<p><b>Zvuk instrumenta koji se vraća u mikrofon:</b> pošto je osnovni ton instrumenta i sam nizak, može da "prevari" mikrofon i sam sebe drži uključenim. Zato mikrofon, osim jačine, gleda i da li je zvuk šum daha ili čist ton (<b>ČISTOĆA DAHA</b>) — čist ton instrumenta se ignoriše. <b>KALIBRIŠI TIŠINU</b> izmeri buku prostorije dok ćutiš i podigne prag iznad nje.</p>
+<p><b>NAUČI MOJ DAH</b> ide korak dalje: dodirni ga i duvaj ravnomerno oko 1,5 sekunde. Telefon zapamti tačan "oblik" tvog daha kroz tvoj mikrofon (PREPOZNAVANJE DAHA). Posle toga, zvuk mora da liči na taj zapamćeni oblik da bi pokrenuo ton — većina drugih zvukova (glas, kašalj, buka) se tada ignoriše, čak i ako su glasni. <b>ZABORAVI</b> to briše i vraća na obično prepoznavanje. Ako ti kasnije bude previše strogo (ne čuje ni tvoj dah) ili prelabavo, javi mi pa podešavam prag.</p>
 </div>
 
 <script>
@@ -377,23 +380,27 @@
   stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up); stage.addEventListener('lostpointercapture', up);
   stage.addEventListener('contextmenu', e => e.preventDefault());
 
-  // ---- pitch model: position of each hole along the tube decides the effective air-column length ----
-  // Not tempered (real instrument has no fixed notes) - this mapping is only for testing, not a measured tuning.
-  const TUBE = {orig: {mouth: 965, bell: 104}, repl: {mouth: 1062, bell: 190}};
-  const BASE_LOW = 174.61; // arbitrary anchor pitch (F3) for "everything closed" - not a measured value
-  function holePos(h, key){
-    const T = TUBE[key];
-    return Math.max(0, Math.min(1, (T.mouth - h.y) / (T.mouth - T.bell)));
-  }
-  function currentEffLen(){
-    const V = VERS[ver], key = V.real;
-    let firstOpenPos = 1;
-    V.holes.forEach(h => {
-      if(h.id === 'bell' || coveredSet.has(h.id)) return;
-      const p = holePos(h, key);
-      if(p < firstOpenPos) firstOpenPos = p;
-    });
-    return Math.max(0.12, firstOpenPos);
+  // ---- pitch model: real fingering table from Miloš ----
+  // The lowest, closest-to-the-mouthpiece OPEN hole sets the pitch; anything open further down
+  // toward the bell (including the palm hole, which sits even closer to the bell than h3) makes
+  // no difference once a hole nearer the mouth is open - standard acoustics for a simple tube.
+  // Confirmed so far, all with the mouth-side hole (h1) still closed:
+  //   Cis: everything closed  ·  D: palm open  ·  E: palm + h3 open  ·  A: palm + h3 + h2 open
+  // h1 open is not yet given, so it plays the same as A until Miloš gives that note.
+  const NOTE_CIS = {name: 'Cis', hz: 277.18};
+  const NOTE_D   = {name: 'D',   hz: 293.66};
+  const NOTE_E   = {name: 'E',   hz: 329.63};
+  const NOTE_A   = {name: 'A',   hz: 440.00};
+  const OVERBLOW_ABOVE_DB = 14; // breath this many dB above the onset threshold overblows to the octave above
+  function currentNoteFromFingers(){
+    const V = VERS[ver];
+    const ids = new Set(V.holes.map(h => h.id));
+    const isOpen = id => ids.has(id) && !coveredSet.has(id);
+    if(isOpen('h1')) return NOTE_A;   // not confirmed yet - placeholder until given
+    if(isOpen('h2')) return NOTE_A;
+    if(isOpen('h3')) return NOTE_E;
+    if(isOpen('p5')) return NOTE_D;
+    return NOTE_CIS;
   }
 
   // ---- audio engine ----
@@ -401,11 +408,14 @@
   let micOn = false, micBreath = false, manualBlow = false, breathing = false;
   let smoothedDb = -70, aboveSince = 0, belowSince = 0;
   const DB_FLOOR = -70, ONSET_MS = 60, RELEASE_MS = 120, RELEASE_DB = 6;
-  const FLAT_ON = 0.22, FLAT_OFF = 0.13, NOISE_MARGIN_DB = 8;
-  let flatness = 0, noiseFloorDb = null;
+  const FLAT_ON = 0.22, FLAT_OFF = 0.13, NOISE_MARGIN_DB = 8, HIGH_RATIO_MAX = 0.55;
+  const TPL_LO_HZ = 30, TPL_HI_HZ = 900, SIM_ON = 0.68, SIM_OFF = 0.5;
+  let flatness = 0, highRatio = 0, noiseFloorDb = null;
+  let breathTemplate = null, breathSim = 0;
+  let calibratingBreath = false, calibSum = null, calibN = 0;
   const micHist = [];
   const P = {sens: 50, vol: 70};
-  let bendST = 7, camClosed = 0, camOn = false, camStream = null, camTrack = null, camFacing = 'user';
+  let bendST = 12, camClosed = 0, camOn = false, camStream = null, camTrack = null, camFacing = 'user';
   let camOpenRef = null, camShutRef = null, camLum = 0;
   const camHist = [];
 
@@ -432,13 +442,17 @@
     master.connect(comp); comp.connect(audioCtx.destination);
     osc.start(); lfo.start(); noise.start();
   }
+  let currentNote = NOTE_CIS;
   function updatePitch(){
     if(!osc || !audioCtx) return;
-    const effLen = currentEffLen();
+    currentNote = currentNoteFromFingers();
     const fingerBell = coveredSet.has('bell');
     const closed = Math.max(camClosed, fingerBell ? 1 : 0);
     const bendFactor = Math.pow(2, -closed * bendST / 12);
-    const f = BASE_LOW * Math.pow(1 / effLen, 0.5) * bendFactor;
+    const baseThr = sensToDb(P.sens);
+    const thr = noiseFloorDb !== null ? Math.max(baseThr, noiseFloorDb + NOISE_MARGIN_DB) : baseThr;
+    const overblow = smoothedDb > thr + OVERBLOW_ABOVE_DB;
+    const f = currentNote.hz * (overblow ? 2 : 1) * bendFactor;
     osc.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.02);
     if(toneLP) toneLP.frequency.setTargetAtTime(3600 * (1 - 0.4 * closed), audioCtx.currentTime, 0.05);
   }
@@ -530,14 +544,43 @@
       const targetFlat = n > 0 && linSum > 0 ? Math.min(1, (Math.exp(logSum / n) / (linSum / n))) : 0;
       flatness += (targetFlat - flatness) * 0.3;
 
+      // true breath (blown close to the mic) sits mostly in the low band; a cough, voice or clap
+      // also carries real energy well above it - so a high proportion up there rules out breath.
+      const hiLoBin = Math.min(freqData.length - 1, Math.round(800 / binHz)), hiHiBin = Math.min(freqData.length - 1, Math.round(3000 / binHz));
+      let hiLin = 0;
+      for(let i = hiLoBin; i <= hiHiBin; i++) hiLin += Math.pow(10, freqData[i] / 20);
+      const targetHighRatio = (hiLin + linSum) > 0 ? hiLin / (hiLin + linSum) : 0;
+      highRatio += (targetHighRatio - highRatio) * 0.3;
+
+      // "learn my breath": a normalized loudness-shape vector over 30-900 Hz, compared each frame
+      // to whatever was captured during NAUČI MOJ DAH - a much more specific fingerprint than
+      // flatness/highRatio alone, so most unrelated sounds (voice, coughs, room noise) just don't match.
+      const tLoBin = Math.max(1, Math.round(TPL_LO_HZ / binHz)), tHiBin = Math.min(freqData.length - 1, Math.round(TPL_HI_HZ / binHz));
+      const vec = [];
+      for(let i = tLoBin; i <= tHiBin; i++) vec.push(Math.max(0, Math.pow(10, freqData[i] / 20)));
+      let vecLen = 0; for(const v of vec) vecLen += v * v; vecLen = Math.sqrt(vecLen);
+      if(vecLen > 1e-9) for(let i = 0; i < vec.length; i++) vec[i] /= vecLen;
+      if(calibratingBreath){
+        if(!calibSum) calibSum = new Array(vec.length).fill(0);
+        for(let i = 0; i < vec.length; i++) calibSum[i] += vec[i];
+        calibN++;
+      }
+      let targetSim = 1; // with no template learned yet, similarity never blocks onset
+      if(breathTemplate && breathTemplate.length === vec.length){
+        let dot = 0; for(let i = 0; i < vec.length; i++) dot += vec[i] * breathTemplate[i];
+        targetSim = Math.max(0, Math.min(1, dot));
+      }
+      breathSim += (targetSim - breathSim) * 0.35;
+      $('simFill').style.width = (breathSim * 100) + '%'; $('v_sim').textContent = Math.round(breathSim * 100) + '%';
+
       const now = performance.now();
       micHist.push({t: now, db: smoothedDb}); while(micHist.length && now - micHist[0].t > 2500) micHist.shift();
       const baseThr = sensToDb(P.sens);
       const thr = noiseFloorDb !== null ? Math.max(baseThr, noiseFloorDb + NOISE_MARGIN_DB) : baseThr;
       if(!micBreath){
-        if(smoothedDb > thr && flatness > FLAT_ON){ if(!aboveSince) aboveSince = now; if(now - aboveSince >= ONSET_MS){ micBreath = true; aboveSince = 0; belowSince = 0; } } else aboveSince = 0;
+        if(smoothedDb > thr && flatness > FLAT_ON && highRatio < HIGH_RATIO_MAX && (!breathTemplate || breathSim > SIM_ON)){ if(!aboveSince) aboveSince = now; if(now - aboveSince >= ONSET_MS){ micBreath = true; aboveSince = 0; belowSince = 0; } } else aboveSince = 0;
       } else {
-        if(smoothedDb < thr - RELEASE_DB || flatness < FLAT_OFF){ if(!belowSince) belowSince = now; if(now - belowSince >= RELEASE_MS){ micBreath = false; belowSince = 0; aboveSince = 0; } } else belowSince = 0;
+        if(smoothedDb < thr - RELEASE_DB || flatness < FLAT_OFF || highRatio > HIGH_RATIO_MAX + 0.1 || (breathTemplate && breathSim < SIM_OFF)){ if(!belowSince) belowSince = now; if(now - belowSince >= RELEASE_MS){ micBreath = false; belowSince = 0; aboveSince = 0; } } else belowSince = 0;
       }
       const mp = Math.max(0, Math.min(100, (smoothedDb - DB_FLOOR) / (-DB_FLOOR) * 100));
       $('meterFill').style.width = mp + '%'; $('v_db').textContent = Math.round(mp) + '%';
@@ -580,6 +623,20 @@
     }, 1400);
   });
   $('micAuto').addEventListener('click', () => { noiseFloorDb = null; panelMsg('Kalibracija tišine poništena.'); });
+  $('breathCal').addEventListener('click', () => {
+    if(!micOn){ panelMsg('Prvo uključi mikrofon.'); return; }
+    panelMsg('Duvaj ravnomerno, sada...');
+    calibSum = null; calibN = 0; calibratingBreath = true;
+    setTimeout(() => {
+      calibratingBreath = false;
+      if(calibN > 5 && calibSum){
+        let len = 0; for(const v of calibSum) len += v * v; len = Math.sqrt(len);
+        breathTemplate = len > 1e-9 ? calibSum.map(v => v / len) : null;
+        panelMsg(breathTemplate ? 'Naučeno! Sada duvaj i probaj.' : 'Nije uspelo, probaj ponovo i duvaj jače.');
+      } else panelMsg('Nisam uhvatio dovoljno zvuka, probaj ponovo i duvaj tokom cele 1,5 sekunde.');
+    }, 1500);
+  });
+  $('breathReset').addEventListener('click', () => { breathTemplate = null; panelMsg('Zaboravljeno. Prepoznavanje daha je opet obično.'); });
 
   let started = false;
   async function ensureAudio(){ if(!started){ buildSynth(); started = true; requestAnimationFrame(loop); } if(audioCtx.state === 'suspended') await audioCtx.resume(); }
