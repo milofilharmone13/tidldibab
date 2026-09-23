@@ -126,7 +126,9 @@
   <div class="ctl"><label><span>BREATH</span><b id="v_sens">50%</b></label><input type="range" id="sens" min="0" max="100" value="50"></div>
   <div class="ctl"><label><span>VOLUME</span><b id="v_vol">70%</b></label><input type="range" id="vol" min="0" max="100" value="70"></div>
   <div class="ctl"><label><span>DAH</span><b id="v_db">0%</b></label><div class="meter"><i id="meterFill"></i></div></div>
+  <div class="ctl"><label><span>ČISTOĆA DAHA</span><b id="v_flat">0%</b></label><div class="meter"><i id="flatFill"></i></div></div>
   <div class="two"><button class="modeBtn" id="micBtn" type="button">MIKROFON: NE</button><button class="modeBtn" id="blowBtn" type="button">DUVAJ (drži)</button></div>
+  <div class="two"><button class="modeBtn" id="micCal" type="button">KALIBRIŠI TIŠINU</button><button class="modeBtn" id="micAuto" type="button">PONIŠTI</button></div>
 
   <h3>Zvono (kamera)</h3>
   <div class="ctl"><label><span>ZATVORENOST</span><b id="v_cam">0%</b></label><div class="meter"><i id="camFill"></i></div></div>
@@ -160,6 +162,7 @@
 <p>Duvaš u mikrofon telefona, kao kod kavala. Prekrivanje otvora prstom skraćuje ili produžava cev i menja visinu tona. Ovaj instrument nije tempiran (nema fiksne note kao klavir), pa visina tona ovde nije podešena prema pravim merenjima, samo je orijentaciona za probu.</p>
 <p><b>Zvono</b> (gornji, prošireni kraj) se zatvara prstom ili kamerom telefona (prednja kamera je fizički na istom kraju telefona kao zvono na ekranu). Zatvaranje zvona spušta ton, kao kad Boštjan rukom reguliše zvuk na kraju cevi.</p>
 <p>Podešavanja su iza dugmeta <b>⚙</b> gore desno: osetljivost mikrofona i jačina zvuka, i posebno kamera (uključivanje, izbor objektiva, kalibracija, opseg spuštanja tona).</p>
+<p><b>Zvuk instrumenta koji se vraća u mikrofon:</b> pošto je osnovni ton instrumenta i sam nizak, može da "prevari" mikrofon i sam sebe drži uključenim. Zato mikrofon sada, osim jačine, gleda i da li je zvuk šum daha ili čist ton (<b>ČISTOĆA DAHA</b>) — čist ton instrumenta se ignoriše. <b>KALIBRIŠI TIŠINU</b> izmeri buku prostorije dok ćutiš i podigne prag iznad nje; <b>PONIŠTI</b> to vraća na obično podešavanje. Ako i dalje bude nepouzdano, slušalice to potpuno rešavaju.</p>
 </div>
 
 <script>
@@ -394,10 +397,13 @@
   }
 
   // ---- audio engine ----
-  let audioCtx, master, env, noiseGain, osc, toneLP, analyser, timeData;
+  let audioCtx, master, env, noiseGain, osc, toneLP, analyser, timeData, freqData;
   let micOn = false, micBreath = false, manualBlow = false, breathing = false;
   let smoothedDb = -70, aboveSince = 0, belowSince = 0;
   const DB_FLOOR = -70, ONSET_MS = 60, RELEASE_MS = 120, RELEASE_DB = 6;
+  const FLAT_ON = 0.22, FLAT_OFF = 0.13, NOISE_MARGIN_DB = 8;
+  let flatness = 0, noiseFloorDb = null;
+  const micHist = [];
   const P = {sens: 50, vol: 70};
   let bendST = 7, camClosed = 0, camOn = false, camStream = null, camTrack = null, camFacing = 'user';
   let camOpenRef = null, camShutRef = null, camLum = 0;
@@ -458,7 +464,7 @@
     const hp = audioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 30;
     const lp1 = audioCtx.createBiquadFilter(); lp1.type = 'lowpass'; lp1.frequency.value = 250; lp1.Q.value = 0.707;
     const lp2 = audioCtx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 250; lp2.Q.value = 0.707;
-    analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048; timeData = new Float32Array(analyser.fftSize);
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 4096; timeData = new Float32Array(analyser.fftSize); freqData = new Float32Array(analyser.frequencyBinCount);
     src.connect(g); g.connect(hp); hp.connect(lp1); lp1.connect(lp2); lp2.connect(analyser);
     micOn = true; $('micBtn').textContent = 'MIKROFON: DA'; $('micBtn').classList.add('on');
   }
@@ -510,14 +516,32 @@
       const rms = Math.sqrt(sum / timeData.length);
       const db = Math.max(DB_FLOOR, rms > 1e-5 ? 20 * Math.log10(rms) : DB_FLOOR);
       smoothedDb += (db - smoothedDb) * (db > smoothedDb ? 0.5 : 0.12);
-      const thr = sensToDb(P.sens), now = performance.now();
+
+      // spectral flatness in the 30-250 Hz band: breath (turbulent air) is noise-like (flat spectrum),
+      // the instrument's own tone leaking back into the mic is peaky (low flatness) - this tells them apart.
+      analyser.getFloatFrequencyData(freqData);
+      const binHz = audioCtx.sampleRate / analyser.fftSize;
+      const loBin = Math.max(1, Math.round(30 / binHz)), hiBin = Math.min(freqData.length - 1, Math.round(250 / binHz));
+      let logSum = 0, linSum = 0, n = 0;
+      for(let i = loBin; i <= hiBin; i++){
+        const mag = Math.pow(10, freqData[i] / 20);
+        if(mag > 1e-8){ logSum += Math.log(mag); linSum += mag; n++; }
+      }
+      const targetFlat = n > 0 && linSum > 0 ? Math.min(1, (Math.exp(logSum / n) / (linSum / n))) : 0;
+      flatness += (targetFlat - flatness) * 0.3;
+
+      const now = performance.now();
+      micHist.push({t: now, db: smoothedDb}); while(micHist.length && now - micHist[0].t > 2500) micHist.shift();
+      const baseThr = sensToDb(P.sens);
+      const thr = noiseFloorDb !== null ? Math.max(baseThr, noiseFloorDb + NOISE_MARGIN_DB) : baseThr;
       if(!micBreath){
-        if(smoothedDb > thr){ if(!aboveSince) aboveSince = now; if(now - aboveSince >= ONSET_MS){ micBreath = true; aboveSince = 0; belowSince = 0; } } else aboveSince = 0;
+        if(smoothedDb > thr && flatness > FLAT_ON){ if(!aboveSince) aboveSince = now; if(now - aboveSince >= ONSET_MS){ micBreath = true; aboveSince = 0; belowSince = 0; } } else aboveSince = 0;
       } else {
-        if(smoothedDb < thr - RELEASE_DB){ if(!belowSince) belowSince = now; if(now - belowSince >= RELEASE_MS){ micBreath = false; belowSince = 0; aboveSince = 0; } } else belowSince = 0;
+        if(smoothedDb < thr - RELEASE_DB || flatness < FLAT_OFF){ if(!belowSince) belowSince = now; if(now - belowSince >= RELEASE_MS){ micBreath = false; belowSince = 0; aboveSince = 0; } } else belowSince = 0;
       }
       const mp = Math.max(0, Math.min(100, (smoothedDb - DB_FLOOR) / (-DB_FLOOR) * 100));
       $('meterFill').style.width = mp + '%'; $('v_db').textContent = Math.round(mp) + '%';
+      $('flatFill').style.width = (flatness * 100) + '%'; $('v_flat').textContent = Math.round(flatness * 100) + '%';
     }
     if(camOn){
       const v = camSample();
@@ -543,6 +567,19 @@
   bindSlider('sens', 'sens');
   bindSlider('vol', 'vol', () => { if(master && audioCtx) master.gain.setTargetAtTime(P.vol / 100 * 0.9, audioCtx.currentTime, 0.02); });
   $('bend').addEventListener('input', () => { bendST = parseInt($('bend').value, 10); $('v_bend').textContent = bendST + ' pt'; });
+  $('micCal').addEventListener('click', () => {
+    if(!micOn){ panelMsg('Prvo uključi mikrofon.'); return; }
+    panelMsg('Ćuti, ne duvaj, meri se buka prostorije...');
+    setTimeout(() => {
+      const now = performance.now();
+      const recent = micHist.filter(h => now - h.t <= 1300);
+      if(recent.length){
+        noiseFloorDb = recent.reduce((s, h) => s + h.db, 0) / recent.length;
+        panelMsg('Kalibrisano: tišina je na ' + Math.round(noiseFloorDb) + ' dB. Prag je sada iznad toga.');
+      } else panelMsg('Nisam uspeo da izmerim, probaj ponovo.');
+    }, 1400);
+  });
+  $('micAuto').addEventListener('click', () => { noiseFloorDb = null; panelMsg('Kalibracija tišine poništena.'); });
 
   let started = false;
   async function ensureAudio(){ if(!started){ buildSynth(); started = true; requestAnimationFrame(loop); } if(audioCtx.state === 'suspended') await audioCtx.resume(); }
