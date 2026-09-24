@@ -419,7 +419,22 @@
   let smoothedDb = -70, aboveSince = 0, belowSince = 0;
   const DB_FLOOR = -70, ONSET_MS = 90, RELEASE_MS = 120, RELEASE_DB = 6;
   // breath filter: blowing on the mic is mostly low rumble; voice, coughs and shouts carry most energy in the mid band
-  const DOM_DB = 8, MID_OVER_DB = 3;
+  // Phone mics cut the deep rumble, so breath is told apart from voice by periodicity:
+  // breath is noise (no repeating pattern), voice/singing/shouting repeats at its pitch.
+  const VOICED_ON = 0.55;
+  let voicedSince = 0;
+  function voicedness(buf, sr){
+    let e = 0; for(let i = 0; i < buf.length; i++) e += buf[i] * buf[i];
+    if(e < 1e-7) return 0;
+    const minL = Math.floor(sr / 500), maxL = Math.min(Math.floor(sr / 80), buf.length >> 1);
+    const n = buf.length - maxL; let best = 0;
+    for(let L = minL; L <= maxL; L += 2){
+      let c = 0, e1 = 0, e2 = 0;
+      for(let i = 0; i < n; i += 2){ const a = buf[i], b = buf[i + L]; c += a * b; e1 += a * a; e2 += b * b; }
+      const v = c / Math.sqrt(e1 * e2 + 1e-12); if(v > best) best = v;
+    }
+    return best;
+  }
   let analyserMid, timeMid, midDb = -70;
   const P = {sens: 50, vol: 70};
   let bendST = 12, camClosed = 0, camOn = false, camStream = null, camTrack = null, camFacing = 'user';
@@ -543,15 +558,17 @@
       const mdb = Math.max(DB_FLOOR, mrms > 1e-5 ? 20 * Math.log10(mrms) : DB_FLOOR);
       midDb += (mdb - midDb) * (mdb > midDb ? 0.5 : 0.12);
       const thr = sensToDb(P.sens), now = performance.now();
-      const isBlow = (smoothedDb - midDb) >= DOM_DB;   // start only on breath-like sound
-      const voiceTakeover = (midDb - smoothedDb) >= MID_OVER_DB; // loud voice/cough while playing
+      const voiced = timeMid ? voicedness(timeMid, audioCtx.sampleRate) >= VOICED_ON : false;
+      if(voiced){ if(!voicedSince) voicedSince = now; } else voicedSince = 0;
+      const isBlow = !voiced;                                          // start only on noise-like sound
+      const voiceTakeover = voicedSince && now - voicedSince > 150;   // sustained voice while playing
       if(!micBreath){
         if(smoothedDb > thr && isBlow){ if(!aboveSince) aboveSince = now; if(now - aboveSince >= ONSET_MS){ micBreath = true; aboveSince = 0; belowSince = 0; } } else aboveSince = 0;
       } else {
         if(smoothedDb < thr - RELEASE_DB || voiceTakeover){ if(!belowSince) belowSince = now; if(now - belowSince >= RELEASE_MS){ micBreath = false; belowSince = 0; aboveSince = 0; } } else belowSince = 0;
       }
       const mp = Math.max(0, Math.min(100, (smoothedDb - DB_FLOOR) / (-DB_FLOOR) * 100));
-      $('meterFill').style.width = mp + '%'; $('v_db').textContent = Math.round(mp) + '%';
+      $('meterFill').style.width = mp + '%'; $('meterFill').style.background = micBreath ? '#7fd08a' : (voiced ? '#d06a6a' : ''); $('v_db').textContent = Math.round(mp) + '%';
     }
     if(camOn){
       const v = camSample();
